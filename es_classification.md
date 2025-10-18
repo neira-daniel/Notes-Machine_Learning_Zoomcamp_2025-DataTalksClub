@@ -480,14 +480,14 @@ author: Daniel Neira
 
 ## Material
 
-- [Video]() (6:06)
+- [Video](https://www.youtube.com/watch?v=Zz6oRGsJkW4) (6:06)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-3-machine-learning-for-classification)
 - [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/13-summary.md)
 
 ## Notas
 
-- x
+- N/A
 
 # Explore more
 
