@@ -437,14 +437,44 @@ author: Daniel Neira
 
 ## Material
 
-- [Video]() (10:15)
+- [Video](https://www.youtube.com/watch?v=Y-NGmnFpNuM) (10:15)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-3-machine-learning-for-classification)
 - [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/12-using-log-reg.md)
 
 ## Notas
 
-- x
+- Código utilizado en el video para realizar el nuevo entrenamiento y evaluación del desempeño del modelo ajustado usando ahora el conjunto de prueba:
+  ```python
+  # "full train" contiene los datos de los conjuntos de entrenamiento y validación
+  dicts_full_train = df_full_train[categorical + numerical].to_dict(orient='records')
+  dv = DictVectorizer(sparse=False)  # también debería funcionar usando matrices _sparse_
+  X_full_train = dv.fit_transform(dicts_full_train)
+  y_full_train = df_full_train.churn.values
+  model = LogisticRegression()
+  model.fit(X_full_train, y_full_train)
+  # `categorical` y `numerical` son listas que contienen los nombres de las columnas a usar
+  dicts_test = df_test[categorical + numerical].to_dict(orient='records')
+  X_test = dv.transform(dicts_test)
+  y_pred = model.predict_proba(X_test)[:, 1]
+  churn_decision = (y_pred >= 0.5)
+  acc_full = (churn_decision == y_test).mean()
+  ```
+- Como la exactitud que obtenemos aquí es similar a la que obtuvimos cuando ajustamos los parámetros del modelo usando solo los datos de entrenamiento, concluimos que los coeficientes están bien ajustados
+- (_Bonus_) Me parece que aquí faltó ajustar el umbral usando el conjunto de validación
+  - Imagino que usar el umbral 0.5 no necesariamente nos dará siempre los mejores resultados
+  - Podríamos haber probado distintos valores de umbral, tal y como lo hicimos para el hiperparámetro de regularización en el capítulo sobre regresión lineal
+- Finalmente, podemos ver cómo usar el modelo seleccionando una observación cualquiera y viendo qué es lo que predice el modelo:
+  ```python
+  customer = dicts_test[-1]
+  X_small = dv.transform([customer])
+  # imprimir la probabilidad de la etiqueta "1" (`[0,1]` para seleccionar la probabilidad deseada)
+  model.predict_proba(X_small)[0, 1]
+  # obtener una predicción "dura" con umbral 0.5
+  model.predict_proba(X_small)[0, 1] >= 0.5
+  # verificar si la predicción es correcta
+  y_test[-1] == model.predict_proba(X_small)[0, 1] >= 0.5
+  ```
 
 # Summary
 
