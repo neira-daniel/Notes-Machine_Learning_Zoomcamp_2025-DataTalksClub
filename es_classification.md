@@ -361,12 +361,16 @@ author: Daniel Neira
     - $w_0+w^\top x < 0 \implies g(x)<0.5$
     - $w_0+w^\top x \to \infty \implies g(x)\to\infty$
     - $w_0+w^\top x \to -\infty \implies g(x)\to 0$
+- Transformaremos las probabilidades en etiquetas con una regla sencilla:
+  - Cuando la probabilidad sea mayor a un valor $a$ definido, la etiqueta predicha será "1"
+  - En caso contrario, la etiqueta predicha será "0"
+- Por ejemplo, podemos decir que las probabilidades mayores a $0.5$ mapearán a la etiqueta "1"
 
-# Training logistic regression with scikit-Learn
+# Training logistic regression with scikit-learn
 
 ## Material
 
-- [Video]() (12:12)
+- [Video](https://www.youtube.com/watch?v=hae_jXe2fN0) (12:12)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-3-machine-learning-for-classification)
 - [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/10-training-log-reg.md)
