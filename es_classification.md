@@ -339,7 +339,28 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- La regresión logística binaria nos permite abordar problemas de clasificación binaria
+- Es un modelo que retorna la probabilidad de que una observación $x_i$ pertenezca a la clase "positiva" (aquella etiquetada como "1")
+  - Positiva en el sentido de la que responde afirmativamente a la pregunta que nos planteamos
+  - Ejemplos:
+    - ¿Es este correo spam?: la respuesta positiva sería "sí es spam"
+    - ¿Dejará este cliente de usar nuestro producto?: "sí, esa persona dejará de ser nuestro cliente" ("churn")
+- Lo que define a la regresión logística es la función logística
+  - La función logística tiene forma de "S" en el plano
+  - A este tipo de funciones se les llama sigmoides
+  - Función logística estándar: $f:\mathbb{R}\to [0,1]$ tal que $f(x)=\frac{1}{1+e^{-x}}$
+  - Como el codominio de esta función es $[0,1]$, podemos ocuparla para representar probabilidades
+  - Es así que la salida de la función logística no es una etiqueta, sino la probabilidad de que la etiqueta sea "1" (clase positiva)
+- Usaremos la regresión logística para mapear combinaciones lineales de atributos a probabilidades
+  - El modelo será, entonces:
+    $$g(x)=\frac{1}{1+e^{-(w_0+w^\top x)}}$$
+  - Donde $w_0+w^\top x$ es una recta análoga a la que estudiamos en la sección de regresión lineal
+  - Cuando:
+    - $w_0+w^\top x = 0 \implies g(x)=0.5$
+    - $w_0+w^\top x > 0 \implies g(x)>0.5$
+    - $w_0+w^\top x < 0 \implies g(x)<0.5$
+    - $w_0+w^\top x \to \infty \implies g(x)\to\infty$
+    - $w_0+w^\top x \to -\infty \implies g(x)\to 0$
 
 # Training logistic regression with scikit-Learn
 
