@@ -416,14 +416,22 @@ author: Daniel Neira
 
 ## Material
 
-- [Video]() (16:17)
+- [Video](https://www.youtube.com/watch?v=OUrlxnUAAEA) (16:17)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-3-machine-learning-for-classification)
 - [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/11-log-reg-interpretation.md)
 
 ## Notas
 
-- x
+- Interpretaremos los coeficientes del modelo como cualquier combinación lineal $y_i=w_o+w^\top x_i$
+  - $w_0$ será el intercepto ("sesgo" en la nomenclatura del video)
+  - Los demás coeficientes serán las tasas de cambio para cada $x_i$ asociado
+- La diferencia está en que no ocuparemos el resultado de evaluar la combinación lineal, sino que tendremos que calcular la probabilidad asociada a ese valor usando la función logística
+  - Si usamos la función logística estándar, se cumplirán los casos detallados en la sección "Logistic regression" para $w_o+w^\top x$
+- Cuestiones prácticas al usar sklearn:
+  - `dv.get_feature_names_out()`: la forma de listas las categorías asociadas con `dv`, la instancia de `DictVectorizer` con la que realizamos "one-hot encoding"
+  - `model.intercept_[0]` será $w_0$ y `model.coef_[0]` contendrá los demás coeficientes $w$
+  - `zip(dv.get_feature_names_out(), model.coef_[0])`: nos permite parear el nombre de cada atributo con su coeficiente en tuplas
 
 # Using the model
 
