@@ -377,7 +377,40 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Ocuparemos la librería de regresión logística de sklearn de forma análoga a la de `DictVectorizer`
+  ```python
+  from sklearn.linear_model import LogisticRegression
+  model = LogisticRegression()  # esta librería penaliza con L2 por omisión
+  model.fit(X_train, y_train)  # el conjunto de entrenamiento obtenido luego de one-hot encoding
+
+  # predicciones "duras": predicciones de las etiquetas (asigna "1" cuando w_0 + w^T x > 0)
+  model.predict(X_val)
+  # predicciones "suaves": arreglo de dos columnas con las probabilidades para "0" y "1", respectivamente
+  model.predict_proba(X_val)
+
+  # predicciones suaves para la etiqueta "1"
+  y_soft_pred = model.predict_proba(X_val)[:, 1]
+  ```
+- En clases vimos cómo evaluar el desempeño del modelo calculando su "exactitud" (_accuracy_)
+- En clasificación binaria, la [exactitud se define](https://en.wikipedia.org/wiki/Accuracy_and_precision#In_binary_classification) como:
+  $$\mathrm{accuracy}=\frac{\mathrm{TP}+\mathrm{TN}}{\mathrm{TP}+\mathrm{TN}+\mathrm{FP}+\mathrm{FN}}$$
+  - Donde:
+    - TP es "positivos verdaderos" (_true positives_)
+    - TN es "negativos verdaderos" (_true negatives_)
+    - FP es "falsos positivos" (_false positives_)
+    - FN es "falsos negativos" (_false negatives_)
+  - En términos de código, esto es: `(y_val == (y_soft_pred >= 0.5)).mean()` para umbral 0.5
+  - (_Bonus_) sklearn nos permite calcular este indicador con `model.score(X_val, y_val)`
+    - Acá no podremos especificar el umbral
+    - sklearn asigna "1" a las observaciones $x_i$ donde $w_0 + w^\top x_i > 0$ y "0" en caso contrario
+    - Si quisiéramos usar otro umbral, tendremos que calcular la exactitud de una forma más manual:
+      ```python
+      from sklearn.metrics import accuracy_score
+      threshold = 0.7  # por ejemplo
+      y_soft_pred = model.predict_proba(X_val)[:, 1]
+      y_hard_pred = (y_soft_pred > threshold).astype(int)
+      acc = accuracy_score(y_val, y_hard_pred)
+      ```
 
 # Model interpretation
 
