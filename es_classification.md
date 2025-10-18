@@ -524,4 +524,4 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- [Cuaderno de Jupyter](https://github.com/neira-daniel/machine-learning-zoomcamp-hw03) con la solución
