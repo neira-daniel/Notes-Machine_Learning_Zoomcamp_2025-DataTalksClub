@@ -494,10 +494,27 @@ author: Daniel Neira
 ## Material
 
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/14-explore-more.md)
+- [Cuaderno de Jupyter con contenido adicional](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook-scaling-ohe.ipynb)
 
 ## Notas
 
-- x
+- Aspectos que no se trataron en clases:
+  - Uso de `OneHotEncoding` en lugar de `DictVectorizer`
+  - Escalamiento de atributos
+- Ambos aspectos son cubiertos en [este cuaderno de Jupyter](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/03-classification/notebook-scaling-ohe.ipynb)
+- (_Bonus_) En este módulo deberíamos haber escalado los atributos
+  - Debemos escalar los atributos cada vez que usemos:
+    - Modelos basado en distancias
+      - Cuando los atributos tengan dimensiones disímiles, aquellos de mayor magnitud tendrán mayor influencia que aquellos de menor magnitud independiente de si tienen o no mayor poder predictivo
+    - Algoritmos que usan gradientes durante la optimización de los parámetros (su ajuste)
+      - Este es el caso del algoritmo de regresión logística implementado por defecto en sklearn
+    - Modelos con regularizaciones L1 o L2
+      - Su efecto será más pronunciado en los atributos de gran magnitud con respecto a los de pequeña magnitud incluso cuando ambos tengan un potencial predictivo equivalente
+      - Como mencionamos en su momento, la librería de regresión logística de sklearn aplica regularización L2 por omisión
+- Otros conjuntos de datos con los que podemos practicar:
+  - [Leads Dataset](https://www.kaggle.com/datasets/ashydv/leads-dataset): predecir acaso una persona interesada en un servicio terminará convirtiéndose en cliente
+  - [Default of Credit Card Clients](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients): predecir qué personas incurrirán en un impago (_default_)
+    - (_Bonus_) Este conjunto de datos es interesante pues en la página enlazada también aparecen referencias a _papers_ que lo utilizan para hacer análisis de riesgo crediticio
 
 # Homework
 
