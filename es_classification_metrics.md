@@ -23,7 +23,8 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Continuaremos abordando el problema tratado en el [módulo de clasificación](./es_classification.md): identificar los clientes de una empresa de telecomunicaciones que están cerca de dejar de usar el servicio ("churn")
+- La idea es utilizar herramientas adicionales al cálculo de la exactitud (_accuracy_) del modelo para evaluar su desempeño
 
 # Accuracy and dummy model
 
