@@ -14,7 +14,7 @@ Apuntes personales para el curso en línea "[Machine Learning Zoomcamp: A Free 4
 # Module 2: Machine Learning for Regression
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/02-regression) (inglés)
-- Apuntes
+- [Apuntes](./es_regression.md)
 
 # Module 3: Machine Learning for Classification
 
