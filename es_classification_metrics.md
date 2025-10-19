@@ -78,7 +78,64 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Nos interesa cuantificar:
+  - Los aciertos
+    - Predijimos la etiqueta positiva correctamente: positivos verdaderos (_true positive_)
+    - Predijimos negativo correctamente: negativos verdaderos (_true negative_)
+  - Los errores
+    - Predijimos la etiqueta positiva erróneamente: positivo falso (_false positive_)
+    - Predijimos negativo erróneamente: negativo falso (_false negative_)
+- En forma de diagrama (`t` es el umbral):
+  ```mermaid
+  flowchart TD
+      A["g(xi)"] -->|" < t "| B["NEGATIVE:<br/>NO CHURN"]
+      A -->|" ≥ t "| C["POSITIVE:<br/>CHURN"]
+
+      B --> D["CUSTOMER DIDN'T CHURN<br/>(True Negative)"]
+      B --> E["CUSTOMER CHURNED<br/>(False Negative)"]
+
+      C --> F["CUSTOMER DIDN'T CHURN<br/>(False Positive)"]
+      C --> G["CUSTOMER CHURNED<br/>(True Positive)"]
+
+      style A fill:#ffffff,stroke:#000000,stroke-width:2px
+      style B fill:#b0f3ff,stroke:#2596be,stroke-width:2px
+      style C fill:#b0f3ff,stroke:#2596be,stroke-width:2px
+      style D fill:#e6ffe6,stroke:#00aa00,stroke-width:2px
+      style E fill:#ffe6e6,stroke:#ff0000,stroke-width:2px
+      style F fill:#ffe6e6,stroke:#ff0000,stroke-width:2px
+      style G fill:#e6ffe6,stroke:#00aa00,stroke-width:2px
+  ```
+- Organizamos estos 4 valores posibles en una tabla de 2x2 denominada "matriz de confusión" (_confusion matrix_, llamada ocasionalmente _confusion table_ en el video y en el título de esta sección):
+  |                  | Prediction: negative | Prediction: positive |
+  |------------------|----------------------|----------------------|
+  | Actual: negative | True negative        | False positive       |
+  | Actual: positive | False negative       | True positive        |
+  - (_Bonus_) En [Wikipedia](https://en.wikipedia.org/wiki/Confusion_matrix#Example) orientan la matriz de otra forma, pero la información es la misma
+    - Pero cabe tenerlo en consideración porque a veces se opera por columnas y filas y si no prestamos atención podríamos malinterpretar esos valores
+- Código sugerido para construir esta matriz:
+  ```python
+  actual_positive = (y_val == 1)
+  actual_negative = (y_val == 0)
+
+  t = 0.5
+  predict_positive = (y_pred >= t)
+  predict_negative = (y_pred < t)
+
+  tp = (predict_positive & actual_positive).sum()
+  tn = (predict_negative & actual_negative).sum()
+
+  fp = (predict_positive & actual_negative).sum()
+  fn = (predict_negative & actual_positive).sum()
+
+  confusion_matrix = np.array([
+      [tn, fp],
+      [fn, tp]
+  ])
+
+  # valores normalizados y desplegamos con 2 decimales
+  print((confusion_matrix / confusion_matrix.sum()).round(2))
+  ```
+- Si utilizamos los valores normalizados, la exactitud será la suma de los valores de la primera columna del arreglo especificado en el código
 
 # Precision and recall
 
