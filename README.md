@@ -24,7 +24,7 @@ Apuntes personales para el curso en línea "[Machine Learning Zoomcamp: A Free 4
 # Module 4: Evaluation Metrics for Classification
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/04-evaluation) (inglés)
-- Apuntes
+- [Apuntes](./es_classification_metrics.md)
 
 # Module 5: Deploying Machine Learning Models
 
