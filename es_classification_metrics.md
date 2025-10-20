@@ -156,9 +156,9 @@ author: Daniel Neira
   - tn: "true negative"
   - fn: "false negative"
 - Precisión: fracción de predicciones positivas (etiqueta "1") correctas con respecto al total de predicciones positivas
-  $$\frac{\mathrm{tp}}{\text{\# positive predictions}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fp}}$$
+  $$\frac{\mathrm{tp}}{\text{Nº positive predictions}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fp}}$$
 - "Exhaustividad" (_recall_): fracción de predicciones positivas correctas con respecto al total de etiquetas positivas observadas
-  $$\frac{\mathrm{tp}}{\text{\# positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
+  $$\frac{\mathrm{tp}}{\text{Nº positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
 - En el caso del clasificador de _churning_ ajustado en el video:
   - $1 - \mathrm{precisión} = 33 \%$ da cuenta de la fracción de personas a las que les ofrecimos descuentos a pesar de que era improbable de que no renovaran el contrato de servicio
   - $1 - \mathrm{recall} = 46 \%$ da cuenta de la fracción de personas que era probable que no renovaran el contrato de servicio y a las que no fuimos capaces de identificar como tales
@@ -185,11 +185,11 @@ author: Daniel Neira
 - La construimos a partir de dos indicadores que se pueden extraer de la matriz de confusión:
   - FPR: false positive rate
     - Razón entre los falsos positivos y todas las observaciones negativas
-      $$\frac{\mathrm{fp}}{\text{\# false observations}}=\frac{\mathrm{fp}}{\mathrm{tn}+\mathrm{fp}}$$
+      $$\frac{\mathrm{fp}}{\text{Nº false observations}}=\frac{\mathrm{fp}}{\mathrm{tn}+\mathrm{fp}}$$
   - TPR: true positive rate
     - Razón entre los positivos verdaderos y todas las observaciones positivas
     - Es idéntico a _recall_
-    $$\frac{\mathrm{tp}}{\text{\# positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
+    $$\frac{\mathrm{tp}}{\text{Nº positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
 - Naturalmente, nos gustaría que:
   - FPR sea lo menor posible: se minimice fp
   - TPR sea lo más grande posible: se minimice fn
