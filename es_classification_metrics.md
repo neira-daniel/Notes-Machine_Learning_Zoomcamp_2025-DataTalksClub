@@ -149,7 +149,23 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Veremos indicadores relevantes para clasificadores binarios
+- Nomenclatura:
+  - tp: "true positive"
+  - fp: "false positive"
+  - tn: "true negative"
+  - fn: "false negative"
+- Precisión: fracción de predicciones positivas (etiqueta "1") correctas con respecto al total de predicciones positivas
+  $$\frac{\mathrm{tp}}{\text{\# positive predictions}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fp}}$$
+- "Exhaustividad" (_recall_): fracción de predicciones positivas correctas con respecto al total de etiquetas positivas observadas
+  $$\frac{\mathrm{tp}}{\text{\# positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
+- En el caso del clasificador de _churning_ ajustado en el video:
+  - $1 - \mathrm{precisión} = 33 \%$ da cuenta de la fracción de personas a las que les ofrecimos descuentos a pesar de que era improbable de que no renovaran el contrato de servicio
+  - $1 - \mathrm{recall} = 46 \%$ da cuenta de la fracción de personas que era probable que no renovaran el contrato de servicio y a las que no fuimos capaces de identificar como tales
+  - Vemos que, a pesar de que la exactitud de este modelo era de $80 \%$, en realidad no está funcionando bien
+- Regla mnemotécnica que aparece en las [notas comunitarias](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/08680929f3a1c9880f8bf26a6aa340502e18150d/04-evaluation/04-precision-recall.md):
+  - Precision : From the `pre`dicted positives, how many we predicted right. See how the word `pre`cision is similar to the word `pre`diction?
+  - Recall : From the `real` positives, how many we predicted right. See how the word `re`c`al`l is similar to the word `real`?
 
 # ROC curves
 
