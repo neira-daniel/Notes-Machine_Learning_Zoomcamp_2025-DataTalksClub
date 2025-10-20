@@ -482,7 +482,12 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Copiado del material de clases:
+  - Metric - a single number that describes the performance of a model
+  - Accuracy - fraction of correct answers; sometimes misleading
+  - Precision and recall are less misleading when we have class inbalance
+  - ROC Curve - a way to evaluate the performance at all thresholds; okay to use with imbalance
+  - K-Fold CV - more reliable estimate for performance (mean + std)
 
 # Explore more
 
