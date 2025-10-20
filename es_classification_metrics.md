@@ -320,7 +320,48 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- AUC: "area under the curve"
+- Podemos calcular el área bajo la curva ROC para obtener un número que represente el desempeño del modelo y así no tener que mirar los gráficos
+- Resulta trivial decir que:
+  - El modelo ideal tiene un área bajo la curva de 1
+  - Y que el modelo aleatorio tiene un AUC de 0.5
+- Deseamos que nuestro modelo esté lo más cerca posible de AUC igual a 1
+  - Y sabremos que si su valor AUC está cerca de 0.5, nuestro modelo es pésimo pues apenas supera el desempeño de un modelo aleatorio
+- Podemos usar sklearn para estimar el área bajo cualquier curva (en particular, la de la curva ROC):
+  - Alternativa explícita:
+    ```python
+    from sklearn.metrics import auc
+    fpr, tpr, thresholds = roc_curve(y_val, y_pred)
+    # `auc` recibe primero los elementos de la abscisa ("x") y luego los de la ordenada ("y")
+    auc(fpr, tpr)
+    ```
+  - Alternativa algo más automatizada:
+    ```python
+    from sklearn.metrics import roc_auc_score
+    # calculamos AUC de forma inmediata
+    roc_auc_score(y_val, y_pred)
+    ```
+- Interpretaremos AUC de la curva ROC como la probabilidad de que una observación positiva seleccionada al azar tenga un "score" mayor al de una observación negativa seleccionada al azar
+  - En el video llaman "score" a la predicción suave del modelo (la probabilidad que calcula el modelo de regresión logística)
+  - Los _scores_ no son triviales: no son las probabilidades por sobre y por debajo del umbral
+  - Lo que estamos comparando aquí son las probabilidades que calculó el modelo para cada etiqueta de un conjunto de datos que no fue utilizado para el entrenamiento
+  - Así, por ejemplo, podemos tener una probabilidad predicha por el modelo por debajo del umbral:
+    - Al generar la predicción "dura", etiquetaríamos dicho punto como negativo ("0")
+    - Pero la realidad es que la observación es positiva ("1")
+  - Es por lo anterior que deseamos que la AUC esté lo más cerca posible de 1:
+    - Indica que la probabilidad de que el modelo se esté equivocando al predecir las etiquetas es, en general, "baja"
+- Código sugerido para evaluar esta probabilidad usando múltiples experimentos
+  ```python
+  neg = y_pred[y_val == 0]
+  pos = y_pred[y_val == 1]
+
+  n = 50000
+
+  pos_ind = np.random.randint(len(pos), size=n)
+  neg_ind = np.random.randint(len(neg), size=n)
+
+  (pos[pos_ind] > neg[neg_ind]).mean()
+  ```
 
 # Cross-validation
 
