@@ -375,7 +375,100 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Como hemos mencionado en distintas ocasiones, la estrategia usual para usar un conjunto de datos en el contexto de aprendizaje de máquinas es particionarlo en un conjunto de entrenamiento, otro de validación y finalmente uno de prueba
+- Existe un paso adicional que podemos agregar: particionar el conjunto de entrenamiento en $k$ partes
+  - Cuando hacemos esto, entrenamos nuestro modelo de forma iterativa sobre las distintas particiones y calculamos en cada caso índices de desempeño que luego nos ayudarán a seleccionar el mejor modelo bajo dicho índice
+  - Haremos lo anterior para ajustar hiperparámetros del modelo, como pueden parámetros de regularización
+  - Luego, en realidad tendremos dos ciclos:
+    - Uno, padre, que itera sobre los valores del hiperparámetro que queremos optimizar
+      - Trivial: en cada iteración seleccionamos un valor de una lista predefinida
+    - Otro, hijo, que itera sobre las distintas particiones del conjunto de entrenamiento (a cada una de estas nuevas particiones se les denomina "fold")
+      - En este caso, en cada iteración:
+        - Seleccionaremos la $i$-ésima partición de datos, $i \in \{1, 2, \ldots, k\}$, y la trataremos como si fuera el conjunto de validación
+        - Entrenaremos nuestro modelo con las $k-1$ particiones restantes
+        - Calcularemos algún indicador de desempeño (como el ROC AUC) usando la misma $i$-ésima partición seleccionada antes (aquella que no usamos para entrenar) y lo almacenaremos en una lista o un arreglo
+  - Al final de todas las iteraciones tendremos una lista (o arreglo) con todos los indicadores de desempeño recién calculados por cada valor probado del hiperparámetro
+    - Calcularemos aquí promedios y desviaciones de los indicadores recién obtenidos por cada valor del hiperparámetro
+    - Seleccionaremos el valor del hiperparámetro que nos da mejores resultados bajo los estadísticos antes calculados
+      - En el caso del ROC AUC, nos quedaremos idealmente con el hiperparámetro que maximiza dicho valor (promedio más alto) y que minimiza la dispersión (desviación más baja)
+      - En la práctica, podríamos preferir el hiperparámetro que maximiza ROC AUC a pesar de tener mayor dispersión que otras alternativas
+        - Será algo que decidiremos caso a caso
+  - Una vez encontrado el hiperparámetro óptimo, procedemos de la misma forma que hemos descrito en módulos anteriores
+    - Entrenamos nuestro modelo una vez más con el valor del hiperparámetro fijo y usando ahora un superconjunto de entrenamiento que contiene tanto los conjuntos de entrenamiento como de validación
+    - Calculamos el valor del mismo indicador con el que hemos estado juzgando el desempeño del modelo
+    - Usamos luego el conjunto de prueba para hacer predicciones y volvemos a calcular el indicador en cuestión
+    - Nuestro modelo estará bien ajustado si los dos valores del indicador recién calculados son "similares" (bajo algún criterio que nos hayamos dado)
+      - (_Bonus_) Que esté "bien ajustado" no significa que sea el mejor modelo posible
+      - (_Bonus_) Es, simplemente, que nuestro modelo se comporta de la manera esperada cuando lo usamos con datos que no vio durante el entrenamiento
+- Utilizaremos validación cruzada cuando:
+  - Tengamos pocos datos pues esta estrategia nos permite aprovecharlos mejor
+  - Queramos calcular la dispersión de la estimación de un indicador, parámetro o hiperparámetro
+- Será poco habitual usar validación cruzada cuando contemos con gran cantidad de datos
+  - Si es que ellos representan bien el fenómeno que queremos modelar, la técnica de la validación cruzada no debería aportarnos demasiado
+  - Además, usar validación cruzada con muchos datos podría ser "caro" para el procesador
+    - Se utilizará mucho poder de cómputo sin que este se justifique porque la eventual ganancia de desempeño podría ser despreciable respecto a todo el tiempo adicional que nos tomaría realizar la validación cruzada
+- Código sugerido para implementar lo recién discutido:
+  ```python
+  # como dijimos antes, a cada una de las particiones del conjunto de entrenamiento se les llama "fold"
+  # es por eso que al módulo de sklearn que implementa la validación cruzada con "K" particiones se llama "KFold"
+  from sklearn.model_selection import KFold
+
+  # opcional: `tqdm` es un paquete de terceros que implementa barras de progreso
+  # debemos instalarlo de manera explícita
+  # lo podemos ocupar para crear una barra de progreso que nos muestre gráficamente en qué iteración nos encontramos y cuántas restan por completar
+  # nos vendrá bien para hacernos una idea del tiempo que podría demorar la ejecución de rutinas pesadas como pueden ser aquellas de validación cruzada
+  from tqdm.auto import tqdm
+
+  # funciones auxiliares
+
+  def train(df_train, y_train, C=1.0):
+      dicts = df_train[categorical + numerical].to_dict(orient='records')
+
+      dv = DictVectorizer(sparse=False)
+      X_train = dv.fit_transform(dicts)
+
+      model = LogisticRegression(C=C, max_iter=1000)
+      model.fit(X_train, y_train)
+
+      return dv, model
+
+  def predict(df, dv, model):
+      dicts = df[categorical + numerical].to_dict(orient='records')
+
+      X = dv.transform(dicts)
+      y_pred = model.predict_proba(X)[:, 1]
+
+      return y_pred
+
+  # rutinas de entrenamiento usando validación cruzada
+
+  n_splits = 5  # el valor de "k" en KFold
+
+  C_candidates = [0.001, 0.01, 0.1, 0.5, 1, 5, 10]  # valores del hiperparámetro a probar
+
+  # ciclo "padre"
+  for C in tqdm(C_candidates):
+      kfold = KFold(n_splits=n_splits, shuffle=True)
+
+      scores = []
+
+      # ciclo "hijo"
+      for train_idx, val_idx in kfold.split(df_full_train):
+          df_train = df_full_train.iloc[train_idx]
+          df_val = df_full_train.iloc[val_idx]
+
+          y_train = df_train.churn.values
+          y_val = df_val.churn.values
+
+          dv, model = train(df_train, y_train, C=C)
+          y_pred = predict(df_val, dv, model)
+
+          auc = roc_auc_score(y_val, y_pred)
+          scores.append(auc)
+
+  for C, C_scores in zip(C_candidates, scores):
+    print('C=%s %.3f +- %.3f' % (C, np.mean(C_scores), np.std(C_scores)))
+  ```
 
 # Summary
 
