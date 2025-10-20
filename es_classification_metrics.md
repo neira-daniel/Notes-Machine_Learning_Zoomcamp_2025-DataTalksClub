@@ -180,7 +180,133 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- ROC curve: "receiver operating characteristic curve"
+- Nos permite ilustrar el desempeño de un clasificador binario para distintos umbrales de decisión
+- La construimos a partir de dos indicadores que se pueden extraer de la matriz de confusión:
+  - FPR: false positive rate
+    - Razón entre los falsos positivos y todas las observaciones negativas
+      $$\frac{\mathrm{fp}}{\text{\# false observations}}=\frac{\mathrm{fp}}{\mathrm{tn}+\mathrm{fp}}$$
+  - TPR: true positive rate
+    - Razón entre los positivos verdaderos y todas las observaciones positivas
+    - Es idéntico a _recall_
+    $$\frac{\mathrm{tp}}{\text{\# positive observations}}=\frac{\mathrm{tp}}{\mathrm{tp}+\mathrm{fn}}$$
+- Naturalmente, nos gustaría que:
+  - FPR sea lo menor posible: se minimice fp
+  - TPR sea lo más grande posible: se minimice fn
+- Código sugerido para crear este gráfico:
+  ```python
+  def tpr_fpr_dataframe(y_val, y_pred):
+      scores = []
+
+      thresholds = np.linspace(0, 1, 101)
+
+      actual_positive = (y_val == 1)
+      actual_negative = (y_val == 0)
+
+      for t in thresholds:
+
+          predict_positive = (y_pred >= t)
+          predict_negative = (y_pred < t)
+
+          tp = (predict_positive & actual_positive).sum()
+          tn = (predict_negative & actual_negative).sum()
+
+          fp = (predict_positive & actual_negative).sum()
+          fn = (predict_negative & actual_positive).sum()
+
+          scores.append((t, tp, fp, fn, tn))
+
+      columns = ['threshold', 'tp', 'fp', 'fn', 'tn']
+      df_scores = pd.DataFrame(scores, columns=columns)
+
+      df_scores['tpr'] = df_scores.tp / (df_scores.tp + df_scores.fn)
+      df_scores['fpr'] = df_scores.fp / (df_scores.fp + df_scores.tn)
+
+      return df_scores
+
+  df_scores = tpr_fpr_dataframe(y_val, y_pred)
+
+  plt.plot(df_scores.threshold, df_scores['tpr'], label='TPR')
+  plt.plot(df_scores.threshold, df_scores['fpr'], label='FPR')
+  plt.legend()
+  ```
+- Nos interesará comparar curvas ROC con distintos modelos
+- En particular, podemos visualizar la curva ROC de nuestro modelo comparado con un modelo ideal y con otro aleatorio
+- El modelo ideal siempre acierta con su predicción
+  - Podemos crearlo y visualizarlo con el siguiente código:
+    ```python
+    # identificamos el número de observaciones de cada etiqueta
+    num_neg = (y_val == 0).sum()
+    num_pos = (y_val == 1).sum()
+
+    # creamos `y_ideal` con tantos 0 al inicio como `num_neg` y luego 1 como `num_pos`
+    y_ideal = np.repeat([0, 1], [num_neg, num_pos])
+    # esta es la probabilidad de las predicciones del modelo ideal
+    # bastará con crear una malla de valores entre 0 y 1 y con el mismo largo que `y_val`
+    # el umbral a partir del cual el modelo ideal predice 1 es `1 - y_val.mean()`
+    y_ideal_pred = np.linspace(0, 1, len(y_val))
+
+    df_ideal = tpr_fpr_dataframe(y_ideal, y_ideal_pred)
+
+    plt.plot(df_ideal.threshold, df_ideal['tpr'], label='TPR')
+    plt.plot(df_ideal.threshold, df_ideal['fpr'], label='FPR')
+    plt.legend()
+    ```
+- El modelo aleatorio se construye a partir de una distribución uniforme entre 0 y 1
+  - Podemos crearlo y visualizarlo con el siguiente código:
+    ```python
+    y_rand = np.random.uniform(0, 1, size=len(y_val))
+    df_rand = tpr_fpr_dataframe(y_val, y_rand)
+
+    plt.plot(df_rand.threshold, df_rand['tpr'], label='TPR')
+    plt.plot(df_rand.threshold, df_rand['fpr'], label='FPR')
+    plt.legend()
+    ```
+- Graficamos las curvas ROC de nuestro modelo y del modelo ideal con el siguiente código
+  ```python
+  plt.plot(df_scores.threshold, df_scores['tpr'], label='TPR', color='black')
+  plt.plot(df_scores.threshold, df_scores['fpr'], label='FPR', color='blue')
+
+  plt.plot(df_ideal.threshold, df_ideal['tpr'], label='TPR ideal')
+  plt.plot(df_ideal.threshold, df_ideal['fpr'], label='FPR ideal')
+
+  plt.legend()
+  ```
+  - Dejamos de lado el modelo aleatorio pues ya vimos que sus curvas son similares a rectas
+  - Incluirlas en este gráfico simplemente dificulta su interpretación
+- Lo que hacemos en la práctica es graficar la curva ROC en el espacio FPR vs TPR (el valor del umbral quedará implícito):
+  ```python
+  plt.figure(figsize=(5, 5))
+
+  plt.plot(df_scores.fpr, df_scores.tpr, label='Model')
+  # simplemente trazamos la recta en lugar del modelo aleatorio porque el comportamiento es similar
+  plt.plot([0, 1], [0, 1], label='Random', linestyle='--')
+  plt.plot(df_ideal.fpr, df_ideal.tpr, label='Ideal')
+
+  plt.xlabel('FPR')
+  plt.ylabel('TPR')
+
+  plt.legend()
+  ```
+  - El comportamiento del modelo ideal es conocido en este espacio y siempre el mismo, de modo que rara vez lo graficaremos
+    - Siempre va desde (0, 0) a (0, 1) y luego a (1, 1)
+    - Nos indica que lo ideal sería que la curva ROC de nuestro modelo se acerque lo más posible al punto (0, 1)
+  - Lo hacemos aquí para observarlo y estudiar su comportamiento nada más, pero luego lo omitiremos
+  - En particular, si usamos sklearn para calcular los datos de la curva ROC, solo obtendremos la curva ROC de nuestro modelo (y la graficamos igual que antes):
+    ```python
+    from sklearn.metrics import roc_curve
+    fpr, tpr, thresholds = roc_curve(y_val, y_pred)
+
+    plt.figure(figsize=(5, 5))
+
+    plt.plot(fpr, tpr, label='Model')
+    plt.plot([0, 1], [0, 1], label='Random', linestyle='--')
+
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+
+    plt.legend()
+    ```
 
 # ROC AUC
 
