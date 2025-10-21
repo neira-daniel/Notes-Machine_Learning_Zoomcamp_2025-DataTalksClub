@@ -29,7 +29,7 @@ Apuntes personales para el curso en línea "[Machine Learning Zoomcamp: A Free 4
 # Module 5: Deploying Machine Learning Models
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment) (inglés)
-- Apuntes
+- [Apuntes](./es_deploying.md)
 
 # Module 6: Decision Trees & Ensemble Learning
 
