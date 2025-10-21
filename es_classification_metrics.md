@@ -493,26 +493,27 @@ author: Daniel Neira
 
 ## Material
 
-- [Video]() ()
-- [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-4-evaluation-metrics-for-classification)
 - [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/04-evaluation/notebook.ipynb)
 - [Cuaderno de Jupyter adicional](https://github.com/alexeygrigorev/mlbookcamp-code/blob/master/chapter-03-churn-prediction/04-metrics.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/09-explore-more.md)
 
 ## Notas
 
-- x
+- Ver qué valores de _precision_ y _recall_ posee un clasificador "dummy" que siempre predice la etiqueta falsa
+- Investigar el uso del [_score_ F1](https://en.wikipedia.org/wiki/F-score):
+  $$F_1=2 \frac{\mathrm{precision}\cdot \mathrm{recall}}{\mathrm{precision} + \mathrm{recall}}$$
+- Investigar el uso de la curva _precision_-_recall_ y cómo se compara con la curva ROC
+  - Se construye evaluando _precision_ y _recall_ para distintos umbrales
+  - Luego se grafica P (ordenada) vs R (abscisa)
+  - Ver qué utilidad tiene conocer el área bajo la curva PR y cómo se compara con el área bajo la curva ROC
+- Calcular e interpretar las métricas estudiadas usando los conjuntos de datos sugeridos en el módulo de [clasificación](./es_classification.md)
 
 # Homework
 
 ## Material
 
-- [Video]() ()
-- [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-4-evaluation-metrics-for-classification)
-- [Cuaderno de Jupyter del video](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/04-evaluation/notebook.ipynb)
-- [Cuaderno de Jupyter adicional](https://github.com/alexeygrigorev/mlbookcamp-code/blob/master/chapter-03-churn-prediction/04-metrics.ipynb)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/homework.md)
 
 ## Notas
 
-- x
+- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw04?tab=readme-ov-file)
