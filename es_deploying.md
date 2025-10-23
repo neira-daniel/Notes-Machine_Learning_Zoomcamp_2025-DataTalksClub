@@ -35,7 +35,71 @@ How to watch it:
 
 ## Notas
 
-- x
+- Diagrama de la situación en torno a la que gira este módulo:
+  ```diagram
+  flowchart LR
+
+  subgraph J[Jupyter Notebook]
+      M1[model]
+  end
+
+  M1 --> F[model.bin]
+
+  subgraph C[Churn Service]
+      M2[model]
+  end
+
+  subgraph MK[Marketing Service]
+      U[(Users)]
+      E["Email Campaign (25%)"]
+  end
+
+  F --> C
+  C --> MK
+  MK --> C
+  MK --> E
+  E --> U
+  ```
+  - Contamos con nuestro clasificador ajustado en el [módulo anterior](./es_classification_metrics.md), el que se encuentra embebido en un cuaderno de Jupyter
+  - Deseamos extraerlo y montarlo en un servidor web que lo pueda usar
+  - La intención es que un tercero (por ejemplo, las personas del departamento de marketing) puedan enviar consultas al servicio web que está ejecutando el modelo
+    - En este ejemplo, la gente de marketing le enviará descuentos promocionales a las personas que estarían por abandonar el servicio que está prestando la empresa
+- En este módulo trabajaremos en cómo alojar un modelo en un servidor web y cómo hacerle consultas
+- Abordaremos este problema por capas:
+  ```
+  +-------------------------------------------------------------+
+  |                         Cloud                               |
+  |                                                             |
+  |   +-----------------------------------------------------+   |
+  |   |                     Docker                          |   |
+  |   |   (Environment — System Dependencies)               |   |
+  |   |                                                     |   |
+  |   |   +---------------------------------------------+   |   |
+  |   |   |                 Pipenv                      |   |   |
+  |   |   |   (Environment — Python Dependencies)       |   |   |
+  |   |   |                                             |   |   |
+  |   |   |   +-------------------------------------+   |   |   |
+  |   |   |   |             Flask                   |   |   |   |
+  |   |   |   |   (Web service)                     |   |   |   |
+  |   |   |   |                                     |   |   |   |
+  |   |   |   |   +-----------------------------+   |   |   |   |
+  |   |   |   |   | CHURN PREDICTION MODEL      |   |   |   |   |
+  |   |   |   |   +-----------------------------+   |   |   |   |
+  |   |   |   +-------------------------------------+   |   |   |
+  |   |   +---------------------------------------------+   |   |
+  |   +-----------------------------------------------------+   |
+  +-------------------------------------------------------------+
+  ```
+  - Núcleo: en el núcleo está el modelo de predicción de _churn_ que ajustamos en el módulo anterior
+  - Servicio web: deseamos empaquetar el modelo en un servicio web
+    - Flask en el caso del video
+    - FastAPI en el caso de la tarea que tendremos que resolver
+  - Entorno para dependencias de Python: tendremosq que crear un entorno de ejecución de Python que cuente con todas las dependencias de nuestro programa (las del servidor web y las de nuestro modelo)
+    - Pipenv en el video
+    - uv en la tarea
+  - Entorno para dependencias del sistema: también tendremos que crear y configurar un entorno donde pueda correr el intérprete de Python
+    - Utilizaremos Docker tanto en las clases como en la tarea
+  - Nube: todo esto será alojado en la nube para que pueda ser accedido a través de internet
 
 # Saving and loading the model
 
