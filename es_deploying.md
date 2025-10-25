@@ -247,7 +247,40 @@ How to watch it:
 
 ## Notas
 
-- x
+- Un servicio web es un servicio con el que nos comunicamos a través de una red
+- Usaremos Flask para crear un servicio web
+- Queremos que nuestro servicio web responda a una consulta GET a la dirección `localhost:9696/ping` con el mensaje `PONG`
+- Código:
+  ```python
+  # /// script
+  # requires-python = ">=3.13"
+  # dependencies = [
+  #     "flask",
+  # ]
+  # ///
+
+  from flask import Flask
+
+  # give an identity to your web service
+  app = Flask('ping')
+
+  # use decorator to add Flask's functionality to our function
+  @app.route('/ping', methods=['GET'])
+  def ping():
+      return 'PONG'
+
+  if __name__ == '__main__':
+      # run the code in local machine with the debugging mode true and port 9696
+      app.run(host='127.0.0.1', port=9696, debug=True)
+  ```
+  - Podemos verificar que el servidor está funcionando abriendo `http://localhost:9696/ping` en un navegador que se encuentre en la misma máquina donde estamos ejecutando el script
+    - También podemos usar `curl`: `curl localhost:9696/ping`
+  - (_Bonus_) Dado que las dependencias están declaradas [de forma estándar en el código](https://packaging.python.org/en/latest/specifications/inline-script-metadata/#inline-script-metadata), podemos ejecutarlo directamente con uv: `uv run example.py` (asumiendo que `example.py` es el nombre del script)
+    - uv instalará las dependencias y creará un entorno virtual donde ejecutar el script de forma automática
+    - Notas:
+      - El [código original](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/f60f128e85a0c7f3f9e4b1b0a1a7bd4ca2e76d72/05-deployment/03-flask-intro.md) no incluye la directiva de dependencias
+      - Es fácil agregarlas a un script existente [usando uv](https://docs.astral.sh/uv/guides/scripts/#declaring-script-dependencies)
+      - En este caso: `uv add --script example.py 'Flask'`
 
 # Serving the churn model with Flask
 
