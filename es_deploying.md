@@ -288,11 +288,71 @@ How to watch it:
 
 - [Video](https://www.youtube.com/watch?v=Q7ZWPgPnRz8) (16:37)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-5-model-deployment)
+- [Archivo `predict.py`](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/a4519a916e1fdc050f39d1d51ef6945a05332cee/05-deployment/code/predict.py)
+- [Archivo `predict-test.py`](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/a4519a916e1fdc050f39d1d51ef6945a05332cee/05-deployment/code/predict-test.py)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/04-flask-deployment.md)
 
 ## Notas
 
-- x
+- En esta lección se mostró cómo montar un _endpoint_ llamado `predict` que responde a consultas a través de la red
+- Tal como antes, se utilizó Flask para implementar la lógica
+  - Este es un servidor de desarrollo
+- Luego se mostró cómo levantar un servidor de producción compatible con [WSGI](https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface) (estándar de comunicación para servidor escritos en Python)
+  - Se mencionaron dos alternativas:
+    - Linux: `gunicorn`:
+      - `gunicorn --bind 127.0.0.1:9696 predict:app`
+    - Windows: `waitress`
+      - `waitress-serve --listen 127.0.0.1:9696 predict:app`
+    - En ambos casos, `predict:app` dice que el servidor debe trabajar con el objeto `app` que se encuentra en `predict.py`
+- Detalles sobre el código:
+  - `predict.py`:
+    ```python
+    import pickle
+
+    from flask import Flask
+    from flask import request
+    from flask import jsonify
+
+    model_file = 'model_C=1.0.bin'
+
+    with open(model_file, 'rb') as f_in:
+        dv, model = pickle.load(f_in)
+
+    app = Flask('churn')
+
+    @app.route('/predict', methods=['POST'])
+    def predict():
+        customer = request.get_json()
+
+        X = dv.transform([customer])
+        y_pred = model.predict_proba(X)[0, 1]
+        churn = y_pred >= 0.5
+
+        result = {
+            'churn_probability': float(y_pred),
+            'churn': bool(churn)
+        }
+
+        return jsonify(result)
+
+    if __name__ == "__main__":
+        app.run(debug=True, host='127.0.0.1', port=9696)
+    ```
+    - `@app.route('/predict', methods=['POST'])`
+      - El cliente está enviando información al servidor (la información de la persona para la que quiere hacer una predicción), de modo que usamos `POST` en lugar de `GET`
+    - `from flask import request` y `customer = request.get_json()`
+      - Declaramos que la información que recibe el servidor debe estar en formato JSON
+      - En este caso usamos un diccionario de Python que es compatible con ese formato, de modo que no hicimos ninguna transformación, pero no siempre podemos suponer que esto funcionará
+    - `float(y_pred)` y `bool(churn)`
+      - Los tipos de `y_pred` y `churn` son tipos de NumPy
+      - Debemos transformalos a tipos estándar de Python para retornarlos al cliente
+    - `from flask import jsonify` y `return jsonify(result)`
+      - El servidor retorna el resultado en formato JSON
+    - `app.run(debug=True, host='127.0.0.1', port=9696)`
+      - El servidor correrá en modo `debug` cada vez que lo invoquemos como script
+        - Esto es, cada vez que ejecutemos `python3 predict.py`
+      - Cuando corramos el servidor usando `gunicorn`, `waitress` o similar, no estaremos ejecutando `predict.py` como script
+        - De modo que no correrá en modo _debug_
 
 # Python virtual environment: Pipenv
 
