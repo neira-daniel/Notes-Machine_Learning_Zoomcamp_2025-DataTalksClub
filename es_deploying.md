@@ -364,7 +364,35 @@ How to watch it:
 
 ## Notas
 
-- x
+- [`pipenv`](https://pipenv.pypa.io/en/latest/) nos permite administrar entornos virtuales de Python
+  - Cada entorno virtual es independiente de los demás
+  - Podemos entonces instalar paquetes en un entorno virtual sin que estos interfieran con los paquetes de otros entornos
+  - Esto facilita trabajar en proyectos con distintos requerimientos
+  - Ejecutaremos cada proyecto dentro de su propio entorno virtual
+  - De esta manera nos ahorramos problemas de incompatibilidad entre paquetes, además de que nos permite instalar distintas versiones de un mismo paquete por proyecto
+- Además de lo anterior, `pipenv` también nos permite administrar `pip` y `Pipfile` (la referencia de qué es lo que está instalado en cada entorno virtual)
+  - Estos archivos serán fundamentales para poder recrear un entorno virtual en otra máquina
+  - De esta forma podremos, por ejemplo, instalar las mismas versiones de los paquetes de Python usados durante el desarrollo del programa en el servidor web que alojará dicha aplicación
+- `pipenv` es mantenido por [la misma organización](https://packaging.python.org/en/latest/key_projects/#pypa-projects) que mantiene `pip`, `pipx`, `setuptools`, `wheel`, etc.
+- Instalación: `pip install --user pipenv`
+  - Ejecutamos `pipenv --version` para verificar que el programa se instaló correctamente
+  - En caso de existir un problema, consultar la [documentación](https://pipenv.pypa.io/en/latest/installation.html)
+- Uso:
+  - Inicializar un proyecto en el directorio actual: `pipenv install`
+  - Fijar la versión de Python: `pipenv --python VERSION`
+  - Instalar paquetes en el proyecto: `pipenv install PACKAGE1 PACKAGE2 . . .`
+    - Podemos especificar las versiones
+    - Por ejemplo, `PACKAGE1==0.1.1` o `PACKAGE2>=1.0`
+  - Instalar los paquetes especificados en `Pipfile.lock`: `pipenv sync`
+  - Activar el entorno virtual: `pipenv shell` (`exit` para salir)
+  - Ejecutar un programa o script dentro del entorno virtual sin activarlo: `pipenv run COMANDO`
+    - Por ejemplo, `pipenv run gunicorn --bind 127.0.0.1:9696 predict:app`
+  - Entre [otros comandos](https://pipenv.pypa.io/en/latest/quick_start.html)
+- A esta altura ya podemos trabajar en distintos proyectos de Python sin que se produzcan conflictos entre ellos
+  - Podemos instalar las dependencias de Python de cada proyecto en entornos virtuales independientes
+- Pero todavía nos falta ver cómo manejar dependencias del sistema
+  - Es decir, programas propios del sistema operativo
+  - Para administrar entornos a nivel de sistema operativo, usaremos Docker (próxima sección)
 
 # Environment management: Docker
 
