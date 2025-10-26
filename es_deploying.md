@@ -404,7 +404,97 @@ How to watch it:
 
 ## Notas
 
-- x
+- Usaremos Docker para crear [contenedores](https://www.docker.com/resources/what-container/)
+- Podremos alojar nuestras aplicaciones en contenedores
+- Los contenedores serán parecidos a máquinas virtuales
+  - Las máquinas virtuales proveen una abstracción de hardware
+  - Docker no virtualiza hardware, sino sistemas operativos
+    - Utiliza un mismo kernel para los distintos contenedores manteniendo independencia entre ellos
+    - Podremos montar múltiples contenedores en una misma máquina sin crear conflictos
+    - Los contenedores serán más livianos y eficientes que montar máquinas virtuales dedicadas
+- Podremos crear contenedores basados en sistemas operativos
+  - Por ejemplo, un contenedor que use Ubuntu y otro que use Alpine o Amazon Linux
+  - Y en cada contenedor instalaremos solo las dependencias que sean necesarias para correr la aplicación que planeamos alojar allí
+- Cada contenedor será independiente de los demás
+- Creamos un contenedor para nuestro clasificador con el siguiente código:
+  ```dockerfile
+  # `python:3.8.12-slim`: la imagen sobre la que queremos crear el contenedor
+  # en este caso se trata de una imagen de Python 3.8.12 corriendo en una versión de Debian que solo contiene los paquetes necesarios para ejecutar Python
+  # esto es suficiente cuando queremos ejecutar aplicaciones de Python simples
+  FROM python:3.8.12-slim
+
+  # usaremos `RUN` para especificar las instrucciones que deseamos ejecutar en el intérprete de comandos que se encuentra dentro del contenedor (en este caso, Bash en Debian)
+  RUN pip install pipenv
+
+  # `WORKDIR DIR` es, básicamente, `mkdir DIR; cd DIR`
+  WORKDIR /app
+
+  # necesitaremos los Pipfiles en el contenedor para poder recrear en entorno virtual que usamos durante el desarrollo del clasificador
+  COPY ["Pipfile", "Pipfile.lock", "./"]
+
+  # instalamos las dependencias de nuestra aplicación de Python
+  RUN pipenv install --system --deploy
+
+  # también necesitaremos almacenar el script de predicción y el modelo en el contenedor
+  COPY ["predict.py", "model_C=1.0.bin", "./"]
+
+  # puerto del contenedor que deseamos exponer al exterior
+  EXPOSE 9696
+
+  # instrucción que deseamos ejecutar al montar el contenedor
+  # en este caso, levantamos el servidor que corre nuestra aplicación de predicción
+  ENTRYPOINT ["gunicorn", "--bind=127.0.0.1:9696", "predict:app"]
+  ```
+  - La versión `slim` podría no ser siempre la adecuada ([más información](https://hub.docker.com/_/python/#image-variants))
+  - `RUN pipenv install --system --deploy` es la forma de instalar los paquetes en un contenedor de Docker [recomendada por los desarrolladores de pipenv](https://pipenv.pypa.io/en/latest/installation.html#docker-installation)
+- Creamos la imagen con `docker build -t zoomcamp-test .`
+  - `-t` nos permite darle un nombre al contenedor
+  - `.` le indica a Docker que debe crear la imagen a partir del Dockerfile que se encuentra en el directorio actual
+- Montamos la imagen con `docker run -it -rm -p 9696:9696 zoomcamp-test`
+  - `it` le indica a Docker que deseamos abrir una sesión interactiva en el contenedor (TTY)
+  - `rm` borrará el contenedor una vez que deje de correr
+  - `-p 9696:9696` mapea el puerto 9696 del _host_ al puerto 9696 del contenedor
+    - Sigue la convención `HOST_PORT:CONTAINER_PORT`
+- Podemos verificar que el contenedor está funcionando enviando una consulta ejecutando el código contenido en [`predict-test.py`](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/94329a0489ea7f934e279ef3334ef98a5988c65e/05-deployment/code/predict-test.py):
+  ```python
+  #!/usr/bin/env python
+  # coding: utf-8
+
+  import requests
+
+  url = 'http://localhost:9696/predict'
+
+  customer_id = 'xyz-123'
+  customer = {
+      "gender": "female",
+      "seniorcitizen": 0,
+      "partner": "yes",
+      "dependents": "no",
+      "phoneservice": "no",
+      "multiplelines": "no_phone_service",
+      "internetservice": "dsl",
+      "onlinesecurity": "no",
+      "onlinebackup": "yes",
+      "deviceprotection": "no",
+      "techsupport": "no",
+      "streamingtv": "no",
+      "streamingmovies": "no",
+      "contract": "month-to-month",
+      "paperlessbilling": "yes",
+      "paymentmethod": "electronic_check",
+      "tenure": 24,
+      "monthlycharges": 29.85,
+      "totalcharges": (24 * 29.85)
+  }
+
+  response = requests.post(url, json=customer).json()
+  print(response)
+
+  if response['churn'] == True:
+      print('sending promo email to %s' % customer_id)
+  else:
+      print('not sending promo email to %s' % customer_id)
+  ```
 
 # Workshop: Deploying ML Models with FastAPI and uv
 
