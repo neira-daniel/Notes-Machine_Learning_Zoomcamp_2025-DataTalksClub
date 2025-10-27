@@ -496,17 +496,6 @@ How to watch it:
       print('not sending promo email to %s' % customer_id)
   ```
 
-# Workshop: Deploying ML Models with FastAPI and uv
-
-## Material
-
-- [Video](https://www.youtube.com/watch?v=jzGzw98Eikk) (1:41:23)
-- [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/workshop/README.md)
-
-## Notas
-
-- x
-
 # Deployment to the cloud: AWS Elastic Beanstalk (optional)
 
 ## Material
@@ -514,6 +503,73 @@ How to watch it:
 - [Video](https://www.youtube.com/watch?v=HGPJ4ekhcLg) (16:35)
 - [Diapositivas](https://www.slideshare.net/AlexeyGrigorev/ml-zoomcamp-5-model-deployment)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/07-aws-eb.md)
+
+## Notas
+
+- Razones del instructor para cubrir AWS Elastic Beanstalk
+  - Tiene experiencia con AWS
+  - AWS es, probablemente, el proveedor de servicios en la nube más popular
+  - Y, en su opinión, Elastic Beanstalk es "relativamente sencillo"
+    - "Basta con unos cuantos comandos para desplegar algo en la nube"
+- Alternativas mencionadas en el video:
+  - Heroku
+  - Google Cloud
+  - Azure
+  - Python Anywhere
+- Instrucciones para [crear una cuenta AWS](https://mlbookcamp.com/article/aws)
+- Forma de imaginar la arquitectura:
+  - Contamos con una instancia de AWS EB en la nube
+  - Almacenamos nuestro contenedor en su interior
+  - Los clientes (en el sentido del modelo cliente-servidor) dirigen sus consultas a AWS EB
+  - AWS EB reenvía (_forwards_) la consulta al contenedor a través del puerto configurado
+  - El programa que está corriendo dentro del contenedor responde y envía la respuesta de vuelta a AWS EB
+  - AWS EB reenvía la respuesta al cliente
+- Balance de carga
+  - AWS EB agrega o disminuye el número de instancias activas de nuestro contenedor dependiendo de la demanda
+    - _Scale up_: agrega instancias para hacer frente a un tráfico alto
+    - _Scale down_: disminuye el número de instancias cuando cae el tráfico
+  - Se encarga también de distribuir las consultas entre las distintas imágenes activas para que el desempeño de nuestro servicio no decaiga
+  - (_Bonus_) Nada de esto saldrá gratis, claramente, pero podría ser deseable si es que estamos prestando un servicio que no puede quedar fuera de línea y que debe tener un alto desempeño
+- Asumiendo que ya contratamos AWS EB, ahora podremos usar la utilidad `eb` en nuestro computador para interactuar con el servicio
+  - Instalación: `pipenv install awsebcli --dev && pipenv shell`
+    - Usamos `--dev` para indicar que es una dependencia de desarrollo
+    - No será instalada en producción
+    - Activamos el entorno para poder usar `eb`, el ejecutable de AWS EB
+  - Registro de una aplicación con EB: `eb init -p docker -r eu-north-1 churn-serving`
+    - `-p docker`: la plataforma para la aplicación es Docker
+    - `-r eu-north-1`: la región donde se debe ubicar el servidor es `eu-north-1`
+    - `churn-serving`: el nombre de la aplicación a registrar con EB
+  - Verificación de que todo salió bien:
+    - Primero corroboramos que se creó el archivo de configuración `./elasticbeanstalk/config.yml`
+    - Y luego probamos el servicio de forma local: `eb local run --port 9696`
+    - Se montará el contenedor y comenzará a funcionar
+    - Consultamos el servicio usando el script `predict-test.py`, debiendo recibir una respuesta de la imagen que está corriendo de forma local
+  - Despliegue del servicio: `eb create churn-service-env`
+    - `churn-service-env`: el nombre del entorno que queremos crear (es diferente del nombre de la aplicación)
+    - Este procedimiento puede tomar varios minutos en completarse
+    - Al finalizar, imprimirá entre los logs la dirección web donde nuestra aplicación se encuentra activa y escuchando ("INFO Application available at...")
+      - Esta dirección estará disponible también en la consola de AWS de nuestra cuenta
+      - Podemos acceder a esa consola a través de la página web de AWS
+  - Terminar el servicio: `eb terminate churn-service-env`
+    - `churn-service-env`: naturalmente, el nombre del entorno que deseamos dejar fuera de línea
+- Consideraciones importantes:
+  - La aplicación que desplegamos con AWS EB estará escuchando en el puerto 80 y no en el puerto que especificamos en nuestra aplicación (en el caso del ejemplo, el 9696)
+    - AWS EB se ocupará de reenviar las consultas desde el puerto 80 del servidor al puerto 9696 del contenedor
+    - Como el puerto 80 es el puerto típico de los servicios web, no hace falta explicitarlo en la URL (la dirección web `example.com:80` es equivalente a `example.com`)
+  - Durante la configuración del servicio no tomamos medidas de seguridad
+    - Si seguimos los pasos de esta guía tal cual, nuestro servicio estará abierto a toda internet sin filtro
+    - Cualquier persona que conozca la URL donde está corriendo nuestro programa de Python será capaz de enviarle consultas
+    - Esto se puede prestar para abusos, donde el eventual exceso de conexiones o consultas al servicio se verán reflejados en nuestra boleta de AWS EB
+    - También supone un riesgo de filtración de información privada
+      - No es el caso de esta aplicación de Python, pero en otros casos podría quedar, por ejemplo, una base de datos abierta a internet, cuya información podría ser extraída por terceros
+    - En la práctica buscaremos limitar el acceso a la aplicación a un grupo determinado de personas (esto está fuera del alcance del curso)
+
+# Workshop: Deploying ML Models with FastAPI and uv
+
+## Material
+
+- [Video](https://www.youtube.com/watch?v=jzGzw98Eikk) (1:41:23)
+- [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/workshop/README.md)
 
 ## Notas
 
