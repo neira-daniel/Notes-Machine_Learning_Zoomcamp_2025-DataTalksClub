@@ -585,7 +585,7 @@ How to watch it:
 
 ## Notas
 
-- x
+- N/A
 
 # Explore more
 
