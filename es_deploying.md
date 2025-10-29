@@ -450,9 +450,9 @@ How to watch it:
 - Creamos la imagen con `docker build -t zoomcamp-test .`
   - `-t` nos permite darle un nombre al contenedor
   - `.` le indica a Docker que debe crear la imagen a partir del Dockerfile que se encuentra en el directorio actual
-- Montamos la imagen con `docker run -it -rm -p 9696:9696 zoomcamp-test`
-  - `it` le indica a Docker que deseamos abrir una sesión interactiva en el contenedor (TTY)
-  - `rm` borrará el contenedor una vez que deje de correr
+- Montamos la imagen con `docker run -it --rm -p 9696:9696 zoomcamp-test`
+  - `-it` le indica a Docker que deseamos abrir una sesión interactiva en el contenedor (TTY)
+  - `--rm` borrará el contenedor una vez que deje de correr
   - `-p 9696:9696` mapea el puerto 9696 del _host_ al puerto 9696 del contenedor
     - Sigue la convención `HOST_PORT:CONTAINER_PORT`
 - Podemos verificar que el contenedor está funcionando enviando una consulta ejecutando el código contenido en [`predict-test.py`](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/94329a0489ea7f934e279ef3334ef98a5988c65e/05-deployment/code/predict-test.py):
