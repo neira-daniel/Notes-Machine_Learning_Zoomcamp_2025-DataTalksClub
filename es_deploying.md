@@ -204,7 +204,7 @@ How to watch it:
 
   input_file = 'model_C=1.0.bin'
   with open(input_file, 'rb') as f_in:
-    dv, model = pickle.dump(f_in)
+    dv, model = pickle.load(f_in)
   ```
   - Debemos tener sklearn instalado para que Python sepa qué es lo que está cargando en memoria cuando está cargando el contenido de `input_file`
 - Podemos probar que el modelo funciona haciendo una predicción:
