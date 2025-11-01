@@ -569,11 +569,156 @@ How to watch it:
 ## Material
 
 - [Video](https://www.youtube.com/watch?v=jzGzw98Eikk) (1:41:23)
+- [Repositorio asociado al video](https://github.com/alexeygrigorev/workshops/tree/main/mlzoomcamp-fastapi-uv)
+- [Repositorio asociado al video (posible _mirror_)](https://github.com/DataTalksClub/machine-learning-zoomcamp/tree/master/05-deployment/workshop)
 - [Página de la lección en GitHub](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/workshop/README.md)
 
 ## Notas
 
-- x
+- Instantes interesantes en el video:
+  - [Uso de pipelines](https://www.youtube.com/watch?v=jzGzw98Eikk?si=FAGQy3kTkplkGrIC&t=1557) en sklearn ([enlace](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/workshop/README.md#scikit-learn-pipelines) al cuaderno)
+    ```python
+    from sklearn.pipeline import make_pipeline
+    from sklearn.feature_extraction import DictVectorizer
+    from sklearn.linear_model import LogisticRegression
+
+    pipeline = make_pipeline(
+        DictVectorizer(),
+        LogisticRegression(solver='liblinear')
+    )
+
+    # ajuste: un paso que contiene tanto la preparación de los datos como el ajuste del modelo
+    pipeline.fit(train_dict, y_train)
+
+    # predicción: un paso
+    pipeline.predict_proba(datapoint)[0, 1]
+    ```
+    - Ahora no será necesario trabajar con la tupla `(dv, model)` de los módulos anteriores
+    - Toda la información estará contenida en `pipeline` y será ese objeto el que serializaremos con Pickle
+    - Nota: para conocer la forma de `train_dict`, `y_train` y `datapoint`, revisar [este cuaderno](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/05-deployment/workshop/starter.ipynb) de Jupyter
+    - **TODO**: revisar cómo funciona esto paso a paso
+- Ejemplo mínimo de un [servidor de FastAPI](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/4a318472ac190e98a0a35c038f12e4e536327f86/05-deployment/workshop/ping.py):
+  ```python
+  # /// script
+  # requires-python = ">=3.13"
+  # dependencies = [
+  #     "fastapi",
+  #     "uvicorn",
+  # ]
+  # ///
+  from fastapi import FastAPI
+  import uvicorn
+
+  # creamos el objeto que representa el servicio web
+  app = FastAPI(title="ping")
+
+  # declaramos que el "endpoint" `/ping` recibe consultas de tipo `get` y responde usando la función `ping()`
+  @app.get("/ping")
+  def ping():
+    return "PONG"
+
+  if __name__ == "__main__":
+    # levantamos la aplicación con `uvicorn`, servidor web que implementa ASGI (especificación compatible con WSGI que agrega capacidades de tipo async)
+    uvicorn.run(app, host="127.0.0.1", port=9696)
+  ```
+  - Luego de ejecutar este programa podemos navegar a [localhost:9696/ping](http://localhost:9696/ping) y ver que se desplega el mensaje "PONG"
+    - Podemos ejecutar el script con `uv run ping.py` y `uv` se encargará de instalar las dependencias  declaradas al comienzo del script
+    - Generamos esa declaración con `uv add --script ping.py 'FastAPI' 'uvicorn'`
+  - Durante el desarrollo podemos levantar el servidor con `uvicorn predict:app --host 127.0.0.1 --port 9696 --reload`
+    - La flag `--reload` se ocupará de actualizar el servidor cada vez que hagamos cambios al código de `predict.py`
+  - Algunas razones por las que usar FastAPI:
+    - Nos permite declarar la forma de los datos ("schema") y hacerlos cumplir usando [Pydantic](https://docs.pydantic.dev/)
+      - Pydantic es una librería para validar datos en Python
+      - Está muy integrada con FastAPI
+    - Documenta la API de nuestra aplicación web de manera automática
+      - Podemos abrir [localhost:9696/docs](http://localhost:9696/docs) mientras el servidor esté activo para entender de qué se trata esto
+      - Allí encontraremos información sobre los _endpoints_ de nuestra aplicación web
+      - Y, si usamos Pydantic para definir la forma de los datos que entran y salen de la aplicación, también desplegará esa información
+- Ejemplo mínimo de [uso de Pydantic con FastAPI](https://github.com/alexeygrigorev/workshops/tree/97b2a46ede29ae33c0cb3fc6b7266b2b04bac04f/mlzoomcamp-fastapi-uv#pydantic-and-validation) para validar datos:
+  ```python
+  from typing import Literal
+  from pydantic import BaseModel, Field
+
+  class Customer(BaseModel):
+    gender: Literal["male", "female"]
+    seniorcitizen: Literal[0, 1]
+    partner: Literal["yes", "no"]
+    dependents: Literal["yes", "no"]
+    phoneservice: Literal["yes", "no"]
+    multiplelines: Literal["no", "yes", "no_phone_service"]
+    internetservice: Literal["dsl", "fiber_optic", "no"]
+    onlinesecurity: Literal["no", "yes", "no_internet_service"]
+    onlinebackup: Literal["no", "yes", "no_internet_service"]
+    deviceprotection: Literal["no", "yes", "no_internet_service"]
+    techsupport: Literal["no", "yes", "no_internet_service"]
+    streamingtv: Literal["no", "yes", "no_internet_service"]
+    streamingmovies: Literal["no", "yes", "no_internet_service"]
+    contract: Literal["month-to-month", "one_year", "two_year"]
+    paperlessbilling: Literal["yes", "no"]
+    paymentmethod: Literal[
+        "electronic_check",
+        "mailed_check",
+        "bank_transfer_(automatic)",
+        "credit_card_(automatic)",
+    ]
+    tenure: int = Field(..., ge=0)
+    monthlycharges: float = Field(..., ge=0.0)
+    totalcharges: float = Field(..., ge=0.0)
+
+  class PredictResponse(BaseModel):
+    churn_probability: float
+    churn: bool
+
+  @app.post("/predict")
+  def predict(customer: Customer) -> PredictResponse:
+    prob = predict_single(customer.model_dump())
+
+    return PredictResponse(
+        churn_probability=prob,
+        churn=prob >= 0.5
+    )
+  ```
+- Ejemplo mínimo de [Dockerfile para el clasificador](https://github.com/alexeygrigorev/workshops/tree/97b2a46ede29ae33c0cb3fc6b7266b2b04bac04f/mlzoomcamp-fastapi-uv#docker) que desarrollamos en los módulos anteriores:
+  ```Dockerfile
+  # Use the official Python 3.13.5 slim version based on Debian Bookworm as the base image
+  FROM python:3.13.5-slim-bookworm
+
+  # Copy the 'uv' and 'uvx' executables from the latest uv image into /bin/ in this image
+  # 'uv' is a fast Python package installer and environment manager
+  COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+  # Set the working directory inside the container to /code
+  # All subsequent commands will be run from here
+  WORKDIR /code
+
+  # Add the virtual environment's bin directory to the PATH so Python tools work globally
+  ENV PATH="/code/.venv/bin:$PATH"
+
+  # Copy the project configuration files into the container
+  # pyproject.toml     → project metadata and dependencies
+  # uv.lock            → locked dependency versions (for reproducibility)
+  # .python-version    → Python version specification
+  COPY "pyproject.toml" "uv.lock" ".python-version" ./
+
+  # Install dependencies exactly as locked in uv.lock, without updating them
+  RUN uv sync --locked
+
+  # Copy application code and model data into the container
+  COPY "predict.py" "model.bin" ./
+
+  # Expose TCP port 9696 so it can be accessed from outside the container
+  EXPOSE 9696
+
+  # Run the application using uvicorn (ASGI server)
+  # predict:app → refers to 'app' object inside predict.py
+  # --host 0.0.0.0 → listen on all interfaces
+  # --port 9696    → listen on port 9696
+  ENTRYPOINT ["uvicorn", "predict:app", "--host", "0.0.0.0", "--port", "9696"]
+  ```
+- Existen otras alternativas de Dockerfile cuando estamos trabajando con uv
+  - [Documentación](https://docs.astral.sh/uv/guides/integration/docker/) de uv
+  - [Ejemplos](https://github.com/astral-sh/uv-docker-example/blob/main/README.md) mantenidos por Astral (creadores de uv)
+  - [Discusión](https://web.archive.org/web/20251028204412/https://old.reddit.com/r/Python/comments/1o3p4bf/best_practices_for_using_python_uv_inside_docker/) en Reddit
 
 # Summary
 
