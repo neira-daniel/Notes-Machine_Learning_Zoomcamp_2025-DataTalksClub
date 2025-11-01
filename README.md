@@ -34,7 +34,7 @@ Apuntes personales para el curso en línea "[Machine Learning Zoomcamp: A Free 4
 # Module 6: Decision Trees & Ensemble Learning
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/06-trees) (inglés)
-- Apuntes
+- [Apuntes](./es_trees_ensemble_learning.md)
 
 # Module 7: Neural Networks & Deep Learning
 
