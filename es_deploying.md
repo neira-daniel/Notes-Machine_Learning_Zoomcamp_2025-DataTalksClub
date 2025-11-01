@@ -764,4 +764,4 @@ How to watch it:
 
 ## Notas
 
-- x
+- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw05)
