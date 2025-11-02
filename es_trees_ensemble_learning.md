@@ -25,7 +25,18 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Ajustaremos un modelo que evalúe el riesgo de prestar dinero a una persona
+  - Tendremos que evaluar acaso la persona será capaz de pagar el préstamo
+  - Lo haremos basándonos en sus antecedentes comerciales, profesionales, etc., y en el monto del préstamo
+- Lo que hará el modelo es retornar la probabilidad de que el cliente entre en _default_
+  - Es decir, la probabilidad de que sea incapaz de retornar el préstamo
+  - Interpretaremos esta probabilidad de manera análoga a como lo hicimos con el problema de la probabilidad de _churning_ que vimos en los módulos de clasificación (ver [clasificación](./es_classification.md) y [métricas para evaluar la clasificación](./es_classification_metrics.md))
+  - Asignaremos 1 cuando la probabilidad de _default_ sea mayor a cierto umbral y 0 en caso contrario
+- El modelo asume que clientes con antecedentes parecidos tendrán probabilidades similares de _default_
+  - Luego, lo que haremos será asignar al cliente nuevo a un grupo que contenga personas con antecedentes similares
+  - Y evaluaremos su probabilidad de _default_ en base a los datos de _default_ de clientes similares
+  - Esta probabilidad podría ser matizada en función de si tenemos datos de _default_ del cliente al que estamos evaluando
+- Entrenaremos el modelo usando el conjunto de datos [CreditScoring](https://github.com/gastonstat/CreditScoring)
 
 # Data cleaning and preparation
 
