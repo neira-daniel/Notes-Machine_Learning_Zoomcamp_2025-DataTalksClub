@@ -49,7 +49,64 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- El conjunto de datos:
+  - Codifica las variables categóricas [de manera numérica](https://github.com/gastonstat/CreditScoring/blob/78bec232d45e3b1c5ee2971a3611e3c1fafd1e0f/Part1_CredScoring_Processing.R#L118)
+  - Codifica los valores faltantes en las variables numéricas con [la cifra 99999999](https://github.com/gastonstat/CreditScoring/blob/78bec232d45e3b1c5ee2971a3611e3c1fafd1e0f/Part1_CredScoring_Processing.R#L49)
+- Dado que trabajaremos con los datos de forma interactiva, vale la pena dar nombres a las categorías
+  - Porción de código utilizado durante la exposición para dar nombres a las categorías:
+    ```python
+    home_values = {
+      1: 'rent',
+      2: 'owner',
+      3: 'private',
+      4: 'ignore',
+      5: 'parents',
+      6: 'other',
+      0: 'unk'
+    }
+
+    # podría ser recomendable agregar `.astype(str)` al final
+    df.home = df.home.map(home_values)
+    # alternativa con código más autoexplicativo
+    df.home = df.home.replace(mapping).astype(str)
+    ```
+- Es importante también hacer algo con la codificación de los valores faltantes
+  - Si los dejamos tal cual, no podremos confiar en los cálculos que hagamos con las columnas que tienen valores 99999999
+  - Podemos marcar esos valores como `nan` para luego decidir cómo imputarlos
+    ```python
+    # iteramos sobre las columnas con problemas
+    for c in ['income', 'assets', 'debt']:
+      df[c] = df[c].replace(to_replace=99999999, value=np.nan)
+
+    # comprobamos visualmente que las cosas están bien
+    df.describe().round()
+    ```
+  - Descartamos también el registro de `status` que tiene el valor `unk`:
+    ```python
+    df = df[df.status != 'unk'].reset_index(drop=True)
+    ```
+- Finalmente, preparamos los conjuntos de entrenamiento, validación y prueba de la misma forma que hicimos en lecciones anteriores:
+  ```python
+  from sklearn.model_selection import train_test_split
+
+  seed = 11  # puede ser `None` cuando no necesitamos reproducibilidad
+  df_full_train, df_test = train_test_split(df, test_size=0.2, random_state=seed)
+  df_train, df_val = train_test_split(df_full_train, test_size=0.25, random_state=seed)
+
+  df_train = df_train.reset_index(drop=True)
+  df_val = df_val.reset_index(drop=True)
+  df_test = df_test.reset_index(drop=True)
+
+  # codificamos el estado `default` como 1
+  # como consecuencia, las probabilidades que retorne el modelo para el valor 1 serán las probabilidades de _default_
+  y_train = (df_train.status == 'default').astype('int').values
+  y_val = (df_val.status == 'default').astype('int').values
+  y_test = (df_test.status == 'default').astype('int').values
+
+  del df_train['status']
+  del df_val['status']
+  del df_test['status']
+  ```
 
 # Decision trees
 
