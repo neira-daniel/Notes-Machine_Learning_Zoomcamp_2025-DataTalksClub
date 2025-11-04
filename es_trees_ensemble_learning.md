@@ -119,7 +119,128 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Los árboles de decisión son estructuras con forma de árbol
+  - Sus nodos representan tests respecto de los atributos
+  - Las ramas representan los resultados de los tests
+  - Y las hojas representan una etiqueta
+- Trabajaremos con árboles de decisión binarios
+  - Solo existirán dos respuestas posibles para cada test
+  - De modo que solo podrán salir dos ramas de cada nodo
+- Podemos imaginar los árboles de decisión binarios como una seguidilla de tests de tipo `if-else`
+  - Ejemplo programado a mano:
+    ```python
+    def assess_risk(client):
+       if client['records'] == 'yes':
+          if client['job'] == 'parttime':
+            return 'default'
+          else:
+            return 'ok'
+       else:
+          if client['assets'] > 6000:
+            return 'ok'
+          else:
+            return 'default'
+
+    xi = df_train.iloc[0].to_dict()
+    assess_risk(xi)
+    ```
+  - Lo que representa el siguiente árbol:
+    ```mermaid
+    flowchart TD
+      start["Start: assess_risk(client)"] --> records{"client['records'] == 'yes'?"}
+
+      records -->|False| assets{"client['assets'] > 6000?"}
+      assets -->|False| H[Return 'default']
+      assets -->|True| G[Return 'ok']
+
+      records -->|True| job{"client['job'] == 'parttime'?"}
+      job -->|False| E[Return 'ok']
+      job -->|True| D[Return 'default']
+    ```
+- Los tests serán aprendidos de forma automática a partir de los datos
+- Y si no le ponemos límite al algoritmo de aprendizaje, el modelo replicará los datos de entrenamiento a la perfección
+- El siguiente ejemplo ajusta los pesos del modelo de tal forma que al calcular su ROC AUC usando los datos de entrenamiento da 1 y tan solo 0.65 cuando usamos los de validación
+  ```python
+  from sklearn.tree import DecisionTreeClassifier
+  from sklearn.feature_extraction import DictVectorizer
+  from sklearn.metrics import roc_auc_score
+  from sklearn.tree import export_text
+
+  train_dicts = df_train.fillna(0).to_dict(orient='records')
+
+  dv = DictVectorizer(sparse=False)
+  X_train = dv.fit_transform(train_dicts)
+
+  dt = DecisionTreeClassifier()
+  dt.fit(X_train, y_train)
+
+  # imputamos los valores faltantes con 0 para que el algoritmo pueda correr y así ejemplificar lo
+  # que queremos mostrar (AUC ROC = 1) y no porque 0 sea un buen valor para ocupar aquí
+  val_dicts = df_val.fillna(0).to_dict(orient='records')
+  X_val = dv.transform(val_dicts)
+
+  y_pred = dt.predict_proba(X_val)[:, 1]
+  roc_auc_score(y_val, y_pred)  # 0.6548400377806302
+
+  y_pred = dt.predict_proba(X_train)[:, 1]
+  roc_auc_score(y_train, y_pred)  # 1.0
+  ```
+- Un modelo como el del ejemplo no tiene capacidad de generalizar
+  - Memoriza los datos y tiene un desempeño perfecto con ellos
+  - Pero su desempeño es pobre cuando hacemos predicciones para datos que el modelo no vio durante su entrenamiento
+- Decimos que el modelo está sobreajustado (_overfitted_) cuando tiene un buen desempeño con los datos de entrenamiento, pero es incapaz de generalizar a otros conjuntos de datos
+- Será fácil identificar un árbol de decisión sobreajustado: tendrá gran profundidad
+  - En el caso del modelo del ejemplo: `dt.get_depth()` retorna 19 o 20 dependiendo de la aleatoriedad del algoritmo
+  - Esa es la máxima distancia entre la raíz del árbol y una hoja
+- En el caso de sklearn, podemos imponer una altura máxima con el parámetro `max_depth`:
+  ```python
+  dt = DecisionTreeClassifier(max_depth=3)
+  dt.fit(X_train, y_train)
+
+  y_pred = dt.predict_proba(X_train)[:, 1]
+  auc = roc_auc_score(y_train, y_pred)
+  print('train:', auc)  # 0.78
+
+  y_pred = dt.predict_proba(X_val)[:, 1]
+  auc = roc_auc_score(y_val, y_pred)
+  print('val:', auc)  # 0.74
+
+  # sklearn nos permite visualizar la estructura del árbol ajustado en la terminal usando `export_text`
+  tree_structure = export_text(dt, feature_names=list(dv.get_feature_names_out()))
+  print(tree_structure)
+  ```
+  - El árbol del ejemplo (el contenido de `tree_structure`):
+  ```
+  |--- records=yes <= 0.50
+  |   |--- job=partime <= 0.50
+  |   |   |--- income <= 74.50
+  |   |   |   |--- class: 0
+  |   |   |--- income >  74.50
+  |   |   |   |--- class: 0
+  |   |--- job=partime >  0.50
+  |   |   |--- assets <= 8750.00
+  |   |   |   |--- class: 1
+  |   |   |--- assets >  8750.00
+  |   |   |   |--- class: 0
+  |--- records=yes >  0.50
+  |   |--- seniority <= 6.50
+  |   |   |--- amount <= 862.50
+  |   |   |   |--- class: 0
+  |   |   |--- amount >  862.50
+  |   |   |   |--- class: 1
+  |   |--- seniority >  6.50
+  |   |   |--- income <= 103.50
+  |   |   |   |--- class: 1
+  |   |   |--- income >  103.50
+  |   |   |   |--- class: 0
+  ```
+  - El desempeño del modelo del ejemplo no es muy bueno, pero generaliza mejor que aquel sobreajustado
+  - (_Bonus_) Podemos interpretar la profundidad como un hiperparámetro del modelo, de modo que podemos ajustarla usando el conjunto de validación
+- "Decision stump": un árbol de decisión de profundidad 2
+  - Solo contiene una condición
+  - Su predicción se basa en solo un atributo
+  - (_Bonus_) Por sí solo tendrá un desempeño _débil_ ("weak learner")
+  - (_Bonus_) Pero podemos usar _decision stumps_ como base de modelos más complejos
 
 # Decision tree learning algorithm
 
