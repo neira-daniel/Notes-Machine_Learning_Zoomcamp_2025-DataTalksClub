@@ -455,7 +455,116 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- En esta lección nos concentraremos en dos hiperparámetros del modelo:
+  - Profundidad máxima: `max_depth` en sklearn
+  - Tamaño mínimo de cada partición: `min_samples_leaf` en sklearn
+- Método del instructor:
+  - Este método se basa en que, con conjuntos de datos reales (gran cantidad de observaciones), puede ser muy caro optimizar `max_depth` y `min_samples_leaf` a la vez
+  - Una estrategia pragmática frente a ese problema es primero optimizar `max_depth`, seleccionar unos cuantos valores de profundidad que sean promisorios bajo algún criterio y luego optimizar `min_samples_leaf` con ese subconjunto de valores de `max_depth`
+  - El siguiente pseudocódigo describe esta técnica usando ROC AUC como criterio de desempeño del clasificador:
+    ```
+    D <- valores posibles de `max_depth`
+    S <- valores posibles de `min_samples_leaf`
+    for d in D:
+      ROC_AUC(d) <- calcular ROC AUC para `DecisionTreeClassifier(max_depth=d)`
+    d_candidatos <- escoger los N < length(D) mejores resultados de ROC_AUC(D)
+    for d in d_candidatos:
+      for s in S:
+        ROC_AUC(d, s) <- calcular ROC AUC para `DecisionTreeClassifier(max_depth=d,   min_samples_leaf=s)`
+    escoger el mejor `ROC_AUC(d_candidatos, S)` bajo cierto criterio
+    ```
+- Con respecto al ROC AUC o cualquier otro criterio de desempeño:
+  - No necesariamente escogeremos el máximo absoluto de ROC AUC obtenido
+  - Por ejemplo, si varias configuraciones tienen un ROC AUC similar, podríamos escoger aquella relacionada con el árbol menos profundo
+- Visualización de los ROC AUC obtenidos usando un mapa de calor:
+  - Si bien podemos buscar el ROC AUC máximo de forma programática, observar cómo se comportan los valores calculados también tiene valor
+  - Podemos desplegar esos resultados usando un mapa de calor sobre una tabla pivote de la siguiente forma:
+    - Seleccionar los valores de profundidad promisorios:
+      ```python
+      depths = [1, 2, 3, 4, 5, 6, 10, 15, 20, None]
+
+      for depth in depths:
+        dt = DecisionTreeClassifier(max_depth=depth)
+        dt.fit(X_train, y_train)
+
+        y_pred = dt.predict_proba(X_val)[:, 1]
+        auc = roc_auc_score(y_val, y_pred)
+
+        print('%4s -> %.3f' % (depth, auc))
+      ```
+    - Calcular ROC AUC para cada combinación de los valores promisorios de profundidad y el tamaño mínimo posible de las hojas:
+      ```python
+      scores = []
+
+      for depth in [4, 5, 6]:
+        for s in [1, 5, 10, 15, 20, 500, 100, 200]:
+          dt = DecisionTreeClassifier(max_depth=depth, min_samples_leaf=s)
+          dt.fit(X_train, y_train)
+
+          y_pred = dt.predict_proba(X_val)[:, 1]
+          auc = roc_auc_score(y_val, y_pred)
+
+          scores.append((depth, s, auc))
+
+      columns = ['max_depth', 'min_samples_leaf', 'auc']
+      df_scores = pd.DataFrame(scores, columns=columns)
+      ```
+    - Contenido de `df_scores.head()`:
+      ```
+         max_depth  min_samples_leaf       auc
+      0          4                 1  0.761283
+      1          4                 5  0.761283
+      2          4                10  0.761283
+      3          4                15  0.763726
+      4          4                20  0.760910
+      ```
+    - Construir la tabla pivote:
+      ```python
+      df_scores_pivot = df_scores.pivot(index='min_samples_leaf', columns=['max_depth'], values=['auc'])
+      ```
+    - El contenido de `df_scores_pivot.round(3)` es:
+      ```
+                          auc
+      max_depth             4      5      6
+      min_samples_leaf
+      1                 0.761  0.766  0.756
+      5                 0.761  0.768  0.760
+      10                0.761  0.762  0.778
+      15                0.764  0.772  0.786
+      20                0.761  0.774  0.774
+      100               0.756  0.763  0.776
+      200               0.747  0.759  0.768
+      500               0.680  0.680  0.680
+      ```
+    - Podemos usar Seaborn para graficar la tabla pivote como un mapa de calor en una sola línea de código:
+      ```python
+      import seaborn as sns
+      sns.heatmap(df_scores_pivot, annot=True, fmt=".3f", cmap="flare")
+      ```
+- Finalmente, entrenaremos el modelo una vez más con los valores de `max_depth` y `min_samples_leaf` seleccionados
+  - Por ejemplo, con `max_depth=6` y `min_samples_leaf=15`:
+    ```python
+    dt = DecisionTreeClassifier(max_depth=6, min_samples_leaf=15)
+    dt.fit(X_train, y_train)
+    ```
+- (_Bonus_) Impacto de `max_depth` y `min_samples_leaf` en el sesgo y la varianza de las predicciones
+  - `min_samples_leaf` constante, `max_depth` variable:
+    - Árboles profundos: bajo sesgo, alta varianza
+      - Sobreajuste: estos árboles pueden llegar a aprender incluso el ruido del conjunto de datos
+      - Su gran profundidad se traduce en un gran número de particiones
+      - Y esto se traduce en gran varianza: un cambio pequeño en los atributos de la observación puede hacer que ella caiga en una rama completamente distinta del árbol, posiblemente variando la predicción
+    - Árboles poco profundos: alto sesgo, baja varianza
+      - Subajuste: estos árboles solo pueden capturar patrones superficiales de los datos
+      - Su baja profundidad se traduce en un pequeño número de particiones
+      - Y esto se traduce en baja varianza: las observaciones tienen que variar bastante antes de que sean asignadas a una hoja distinta de la original durante la predicción
+  - `max_depth` infinito, `min_samples_leaf` variable:
+    - Si no limitamos la profundidad del árbol, podemos explicar `min_samples_leaf` en función de lo que dijimos recién para `max_depth`:
+      - Cuando `min_samples_leaf` es pequeño, los árboles son profundos (bajo sesgo, alta varianza)
+      - Cuando `min_samples_leaf` es grande, los árboles son poco profundos (alto sesgo, baja varianza)
+  - Casos extremos:
+    - `max_depth` grande y `min_samples_leaf` pequeño: sobreajuste
+    - `max_depth` pequeño y `min_samples_leaf` grande: subajuste
+  - Tenemos que movernos entre estos extremos en función de nuestra tolerancia al sesgo y la varianza
 
 # Ensemble learning and random forest
 
