@@ -253,7 +253,196 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Dado un atributo, el algoritmo de aprendizaje busca el umbral de corte que genere la mejor predicción
+  - Las reglas serán del estilo `condición(atributo) > T`
+- Al evaluar la calidad de la predicción del modelo hablaremos de su _impureza_ ("impurity")
+- Existen distintas formas de evaluar la impureza del clasificador
+  - Una alternativa sencilla es la llamada "misclassification rate" (útil para temas didácticos)
+  - Otras más elaboradas son Gini y entropía, las que también serán más comunes de usar
+  - En caso de que ocupemos árboles de decisión para problemas de regresión utilizaremos indicadores de impureza distintos a los mencionados
+- "Misclassification rate" usando clasificadores binarios y _decision stumps_
+  - Los _decision stumps_ tienen profundidad 1: la raíz conecta inmediatamente con las hojas
+  - En el caso de árboles de decisión binarios tendremos un nodo raíz con una condición y dos hojas
+  - Como las hojas contienen las etiquetas, cuando usamos _decision stumps_ tenemos que etiquetar cada rama inmediatamente
+  - Una forma sencilla de etiquetar cada rama es por votación
+    - Notemos que al aplicar la condición del nodo raíz al conjunto de datos lo estaremos particionando en dos
+    - Cada partición tendrá su propia distribución de etiquetas `0` y `1`
+      - En el ejemplo que estamos tratando en este módulo `0` es `ok` y `1` es `default`
+    - Cuando usamos votaciones dejamos que los registros "voten" a favor de una etiqueta
+    - Asignaremos a cada rama la etiqueta que tiene mayor "votación" en su partición de datos
+  - Dadas las predicciones, ahora podemos evaluar el desempeño del modelo
+  - Cuando lo hacemos usando "misclasification rate", esto se vuelve trivial
+  - Bastará con calcular la razón de errores que cometimos al predecir las etiquetas: cantidad de predicciones erróneas / total de registros en la partición
+  - Terminaremos con dos errores (uno por cada partición)
+  - Los reduciremos de alguna manera ad-hoc
+    - Promedio simple
+    - Promedio ponderado por la cantidad de registros en cada partición
+    - Otros
+  - Evaluaremos el desempeño del clasificador para valores distintos del umbral `T` usando este último indicador
+- Ejemplo sintético:
+  ```python
+  data = [
+      [8000, 'default'],
+      [2000, 'default'],
+      [   0, 'default'],
+      [5000, 'ok'],
+      [5000, 'ok'],
+      [4000, 'ok'],
+      [9000, 'ok'],
+      [3000, 'default'],
+  ]
+
+  df_example = pd.DataFrame(data, columns=['assets', 'status'])
+  print(df_example)
+  ```
+  - El contenido de `df_example`:
+    ```
+       assets   status
+    0    8000  default
+    1    2000  default
+    2       0  default
+    3    5000       ok
+    4    5000       ok
+    5    4000       ok
+    6    9000       ok
+    7    3000  default
+    ```
+  - Prueba con umbral `T=4000`:
+    ```python
+    T = 4000
+
+    df_left = df_example[df_example.assets <= T]
+    df_right = df_example[df_example.assets > T]
+
+    print(df_left.status.value_counts(normalize=True))
+    print(df_left.status.value_counts(normalize=True))
+    ```
+  - La condición es `df_example.assets > T`
+    - Esta genera dos ramas: una para `True` y otra para `False`
+    - `False`: predecimos la etiqueta `default` debido a que son mayoría en el conjunto de datos resultantes
+      ```
+         assets   status
+      1    2000  default
+      2       0  default
+      5    4000       ok
+      7    3000  default
+      ```
+    - `True`: y aquí predecimos `ok` por razones análogas
+      ```
+         assets   status
+      0    8000  default
+      3    5000       ok
+      4    5000       ok
+      6    9000       ok
+      ```
+    - En ambos casos el _misclassification rate_ es de 25 % (4 registros en cada partición y en cada una de ellas etiquetamos 1 mal)
+  - Si escogemos reducir el _misclassification rate_ usando un promedio simple, resultará que el _misclassification rate_ de este árbol de decisión binario para `T=4000` es de 25 %
+  - Al probar distintos valores de `T` obtenemos lo siguiente:
+    ```
+    | T    | Decision Left | Impurity Left | Decision Right | Impurity Right | AVG |
+    |------|---------------|---------------|----------------|----------------|-----|
+    | 0    | DEFAULT       | 0%            | OK             | 43%            | 21% |
+    | 2000 | DEFAULT       | 0%            | OK             | 33%            | 16% |
+    | 3000 | DEFAULT       | 0%            | OK             | 20%            | 10% |
+    | 4000 | DEFAULT       | 25%           | OK             | 25%            | 25% |
+    | 5000 | DEFAULT       | 50%           | OK             | 50%            | 50% |
+    | 8000 | DEFAULT       | 43%           | OK             | 0%             | 21% |
+    ```
+  - Escogeremos aquel `T` para el que la impureza del modelo sea mínima cuando usamos los datos de validación
+    - Como siempre, no debemos hacer esta optimización con el conjunto de entrenamiento
+    - Si lo hiciéramos, terminaríamos con un modelo sobreajustado
+  - Pasando por alto lo anterior, en este ejercicio sintético vemos que `T=3000` minimiza la impureza promedio del clasificador
+  - (_Bonus_) Notemos que simplemente calcular el promedio podría no ser lo ideal o lo realmente deseado
+    - Quizás estamos particularmente interesados en no clasificar erróneamente como `ok` a un cliente que terminará cayendo en default
+    - O podría ser importante incluir el monto de los préstamos como otro atributo del modelo y aceptar algunos default para clientes que no solicitaron mucho dinero si eso nos permite clasificar correctamente a los clientes que pidieron grandes préstamos y que no caerán en default
+- Podemos actualizar el ejemplo para ver qué ocurre con 2 atributos
+  ```python
+  data = [
+    [8000, 3000, 'default'],
+    [2000, 1000, 'default'],
+    [   0, 1000, 'default'],
+    [5000, 1000, 'ok'],
+    [5000, 1000, 'ok'],
+    [4000, 1000, 'ok'],
+    [9000,  500, 'ok'],
+    [3000, 2000, 'default'],
+  ]
+
+  df_example = pd.DataFrame(data, columns=['assets', 'debt', 'status'])
+  print(df_example)
+  ```
+  - El contenido de `df_example`:
+    ```
+       assets  debt   status
+    0    8000  3000  default
+    1    2000  1000  default
+    2       0  1000  default
+    3    5000  1000       ok
+    4    5000  1000       ok
+    5    4000  1000       ok
+    6    9000   500       ok
+    7    3000  2000  default
+    ```
+  - Y ahora podemos calcular la impureza con todas las combinaciones de los atributos y valores de `thresholds`:
+    ```python
+    thresholds = {
+      'assets': [0, 2000, 3000, 4000, 5000, 8000],
+      'debt': [500, 1000, 2000]
+    }
+    for feature, Ts in thresholds.items():
+      print('#####################')
+      print(f'Feature: {feature}')
+      for T in Ts:
+        print(f'T = {T}')
+        df_left = df_example[df_example[feature] <= T]
+        df_right = df_example[df_example[feature] > T]
+
+        print(df_left.status.value_counts(normalize=True))
+        print(df_right.status.value_counts(normalize=True))
+
+        print()
+    ```
+  - Completamos la tabla anterior ahora con 3 nuevas filas correspondientes a los umbrales de `debt`:
+    ```
+    | T    | Decision Left | Impurity Left | Decision Right | Impurity Right | AVG |
+    |------|---------------|---------------|----------------|----------------|-----|
+    | 0    | DEFAULT       | 0%            | OK             | 43%            | 22% |
+    | 2000 | DEFAULT       | 0%            | OK             | 33%            | 16% |
+    | 3000 | DEFAULT       | 0%            | OK             | 20%            | 10% |
+    | 4000 | DEFAULT       | 25%           | OK             | 25%            | 25% |
+    | 5000 | DEFAULT       | 50%           | OK             | 50%            | 50% |
+    | 8000 | DEFAULT       | 43%           | OK             | 0%             | 22% |
+    |------|---------------|---------------|----------------|----------------|-----|
+    | 500  | OK            | 0%            | DEFAULT        | 43%            | 22% |
+    | 1000 | OK            | 33%           | DEFAULT        | 0%             | 16% |
+    | 2000 | OK            | 43%           | DEFAULT        | 0%             | 22% |
+    ```
+  - Vemos que `T=3000` para el atributo `assets` sigue siendo el óptimo bajo este indicador de impureza
+- Pseudocódigo del algoritmo que selecciona las particiones óptimas:
+  ```
+  for f in features:
+    thresholds <- find all thresholds of f
+    for t in thresholds:
+      splits <- split the dataset using "f > t" condition
+      impurities(f, t) <- compute the impurity of the split
+  select (f, t) that gives the lowest impurities(f, t)
+  ```
+  - Podemos ejecutar esto de manera recursiva por cada partición
+  - Pero recordemos que no podemos hacer que la recursión sea muy profunda o terminaremos sobreajustando
+- Criterios de parada del algoritmo: cuándo debemos dejar de iterar en cada partición
+  - No particionaremos datos que sean puros (o sea, donde todos tengan la misma etiqueta)
+  - No particionaremos datos con menos registros que un mínimo predefinido
+  - No sobrepasaremos la profundidad máxima predefinida
+- El pseudocódigo del algoritmo de aprendizaje de los árboles de decisión:
+  ```
+  verificar que no hemos alcanzado la altura máxima
+  left, right <- encontrar los (f, t) de la partición óptima
+  if left es suficientemente grande e impuro:
+    repetir los dos primeros pasos con el conjunto de datos left
+  if right es suficientemente grande e impuro:
+    repetir los dos primeros pasos con el conjunto de datos right
+  ```
+- Podemos encontrar más información sobre los algoritmos y sobre los arboles de decisión en sí en la [documentación de sklearn](https://scikit-learn.org/stable/modules/tree.html)
 
 # Decision trees parameter tuning
 
