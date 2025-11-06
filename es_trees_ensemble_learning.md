@@ -577,7 +577,113 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Vimos antes que, si no lo impedimos, los árboles de decisión tenderán a sobreajustar los datos
+- (_Bonus_) Lo anterior se traduce en bajo sesgo y alta varianza
+  - Nos gustaría tener tanto un sesgo bajo como una varianza baja
+  - Pero eso no se puede forzar indefinidamente
+  - Siempre existe un [compromiso entre ambas cantidades](https://en.wikipedia.org/wiki/Bias%E2%80%93variance_tradeoff)
+- Podemos hacer frente a este problema introduciendo azar en el algoritmo
+  - (_Bonus_) Si somos hábiles, podremos disminuir la varianza incrementando el sesgo ligeramente
+- La idea aquí es combinar las predicciones de múltiples árboles de decisión
+  - Funcionamiento básico:
+    - Cada uno de los árboles recibe conjuntos de entrenamiento distintos (muestreo con reemplazo)
+    - Y particiona los datos en cada paso usando un subconjunto de atributos escogidos al azar con reemplazo (escoge el óptimo dentro de ese grupo)
+  - Si no introdujéramos azar, estaríamos básicamente entrenando modelos demasiado similares como para ser capaces de generalizar
+- El modelo se compone así de $n$ árboles
+  - Hacemos, entonces, $n$ predicciones para cada nueva observación
+  - La etiqueta que retorna el modelo a partir de las $n$ predicciones puede ser calculada de al menos dos formas:
+    - Votación: el modelo retorna la etiqueta predicha por la mayoría de los árboles
+    - Promedio de probabilidades: el modelo retorna la etiqueta calculando $n^{-1}\sum_{i=1}^n p_i > u$, con $p_i$ la probabilidad retornada por el $i$-ésimo árbol y $u$ el umbral de decisión
+      - Tal y como vimos en módulos anteriores, el modelo retorna la etiqueta 1 cuando la condición es verdadera y 0 en el caso contrario
+- Entrenamos un _random forest_ con sklearn de manera análoga a los demás modelos que hemos visto en los módulos anteriores:
+  ```python
+  from sklearn.ensemble import RandomForestClassifier
+
+  # podemos fijar hiperparámetros adicionales al número de árboles `n_estimators`
+  rf = RandomForestClassifier(n_estimators=10)
+  rf.fit(X_train, y_train)
+
+  y_pred = rf.predict_proba(X_val)[:, 1]
+  auc = roc_auc_score(y_val, y_pred)
+  ```
+- Podemos encontrar los hiperparámetros óptimos con las mismas estrategias ya vistas:
+  - Para evaluar la profundidad:
+    ```python
+    scores = []
+
+    for d in [5, 10, 15]:  # profundidad de cada árbol
+      for n in range(10, 201, 10):  # número de árboles
+        rf = RandomForestClassifier(n_estimators=n,
+                                    max_depth=d)
+        rf.fit(X_train, y_train)
+
+        y_pred = rf.predict_proba(X_val)[:, 1]
+        auc = roc_auc_score(y_val, y_pred)
+
+        scores.append((d, n, auc))
+
+    # ordenamiento de resultados
+    columns = ['max_depth', 'n_estimators', 'auc']
+    df_scores = pd.DataFrame(scores, columns=columns)
+
+    for d in [5, 10, 15]:
+      df_subset = df_scores[df_scores.max_depth == d]
+
+      # gráfico ROC AUC vs número de árboles para una profundidad `d`
+      plt.plot(df_subset.n_estimators, df_subset.auc,
+              label='max_depth=%d' % d)
+
+    # activamos la leyenda para diferenciar las curvas de acuerdo a la profundidad de los árboles
+    plt.legend()
+    ```
+  - Para encontrar el tamaño mínimo de las hojas dada una altura fija (aquella encontrada en el paso anterior)
+    ```python
+    max_depth = 10
+
+    scores = []
+
+    for s in [1, 3, 5, 10, 50]:
+      for n in range(10, 201, 10):
+        rf = RandomForestClassifier(n_estimators=n,
+                                    max_depth=max_depth,
+                                    min_samples_leaf=s)
+        rf.fit(X_train, y_train)
+
+        y_pred = rf.predict_proba(X_val)[:, 1]
+        auc = roc_auc_score(y_val, y_pred)
+
+        scores.append((s, n, auc))
+
+    columns = ['min_samples_leaf', 'n_estimators', 'auc']
+    df_scores = pd.DataFrame(scores, columns=columns)
+
+    colors = ['black', 'blue', 'orange', 'red', 'grey']
+    values = [1, 3, 5, 10, 50]
+
+    for s, col in zip(values, colors):
+      df_subset = df_scores[df_scores.min_samples_leaf == s]
+
+      plt.plot(df_subset.n_estimators, df_subset.auc,
+               color=col,
+               label='min_samples_leaf=%d' % s)
+
+    plt.legend()
+    ```
+  - Y entrenamos finalmente el modelo con los hiperparámetros obtenidos:
+    ```python
+    min_samples_leaf = 3
+
+    rf = RandomForestClassifier(n_estimators=100,
+                                max_depth=max_depth,
+                                min_samples_leaf=min_samples_leaf)
+    rf.fit(X_train, y_train)
+    ```
+- En todos los ejemplos de clase se usó la semilla `random_state=1` al crear los clasificadores
+  - Aquí la omitimos porque no necesitamos reproducibilidad de los resultados, sino entender los pasos
+- Existen otros parámetros que podemos especificar al inicializar el modelo
+  - Ver la [documentación de sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) para conocer más detalles
+  - En particular, será útil modificar el argumento `n_jobs` para especificar la cantidad de procesos en paralelo que queremos ejecutar (el valor por omisión es `None`, el que se interpreta como 1 a menos que ejecutemos el código dentro de un [contexto ad-hoc](https://joblib.readthedocs.io/en/stable/generated/joblib.parallel_config.html))
+  - Los _random forests_ son fácilmente paralelizables (no comparten estado), de modo que podríamos ganar mucho tiempo entrenando varios árboles a la vez
 
 # Gradient boosting and XGBoost
 
