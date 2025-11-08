@@ -782,6 +782,8 @@ author: Daniel Neira
     ```python
     %%capture output
 
+    watchlist = [(dtrain, 'train'), (dval, 'val')]
+
     xgb_params = {
       'eta': 0.3,
       'max_depth': 6,
