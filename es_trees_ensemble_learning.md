@@ -696,7 +696,143 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- _Random forests_:
+  - Vimos que los árboles del algoritmo de _random forests_ no comparten estado
+  - Como no comparten estado, son independientes y fácilmente paralelizables
+- _Boosting_:
+  - Corresponde a una estrategia donde se combinan modelos débiles (de bajo desempeño) para producir un modelo fuerte (de alto desempeño) de forma secuencial
+  - Cada modelo débil de la cadena busca corregir los errores cometidos por el modelo anterior
+- _Gradient boosting trees_:
+  - Implementación específica de la idea de _boosting_
+  - Se construye usando árboles de decisión sencillos como modelos débiles
+  - Optimiza los pesos usando el algoritmo de descenso de gradiente en el error
+- En esta sección utilizaremos [XGBoost](https://github.com/dmlc/xgboost) en lugar de sklearn (`uv add xgboost`) para entrenar el modelo
+  - (_Bonus_) Podemos consultar la [galería de ejemplos](https://xgboost.readthedocs.io/en/stable/python/examples/index.html) oficiales de XGBoost para explorar las capacidades de esta librería (también disponible como un [repositorio de GitHub](https://github.com/dmlc/xgboost/tree/master/demo/guide-python))
+- (_Bonus_) Si bien XGBoost tiene una [API compatible con sklearn](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn), aquí trabajaremos con la [API propia de XGBoost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.training)
+  - Es por eso que utilizaremos objetos `DMatrix` en los ejemplos de esta sección para interactuar con XGBoost y no otros propios del ecosistema de Python como NumPy o Pandas
+  - La elección de la API propia de XGBoost también determina que usemos el método [`train`](https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.train) en lugar de [`fit`](https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRegressor.fit) al entrenar los modelos
+- Código sugerido para entrenar un modelo de _gradient boosting trees_:
+  ```python
+  import xgboost as xgb
+
+  features = list(dv.get_feature_names_out())
+  dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=features)
+  dval = xgb.DMatrix(X_val, label=y_val, feature_names=features)
+
+  xgb_params = {
+    'eta': 0.3,
+    'max_depth': 6,
+    'min_child_weight': 1,
+
+    'objective': 'binary:logistic',
+    'nthread': 8,
+
+    'seed': 1,
+    'verbosity': 1,
+  }
+
+  model = xgb.train(xgb_params, dtrain, num_boost_round=10)
+  ```
+  - Las variables `dv`, `X_train`, etc, provienen de las [etapas anteriores de esta lección](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/06-trees/notebook.ipynb)
+  - [`DMatrix`](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.DMatrix) es la estructura de datos interna utilizada por XGBoost
+  - El diccionario `xgb_params` contiene los [parámetros](https://xgboost.readthedocs.io/en/stable/parameter.html#general-parameters) que XGBoost necesita para entrenar el modelo
+    - Podemos especificar múltiples opciones
+    - (_Bonus_) En particular, usaremos `booster` para especificar el tipo de modelo que queremos usar
+      - Su valor por omisión es `gbtree`
+        - [Utiliza árboles de decisión](https://xgboosting.com/configure-xgboost-tree-booster-gbtree/) en el rol de _weak learners_
+      - [Alternativas](https://xgboosting.com/configure-xgboost-booster-parameter/):
+        - `dart`: útil cuando `gbtree` está sobreajustando
+        - `gblinear`: útil para datos en altas dimensions y _sparse_ cuyas relaciones se puedan aproximar con modelos lineales (produce modelos más sencillos que `gbtree`)
+    - (_Bonus_) Significado de las opciones especificadas:
+      - [`eta`](https://xgboosting.com/configure-xgboost-eta-parameter/): factor por el que multiplicar los pesos en cada etapa para evitar sobreajuste
+        - Controla la variación del valor de los pesos en cada etapa
+        - Valores cercanos a 1 hacen que el algoritmo sea más rápido, pero corremos el riesgo de sobreajustar
+        - Valores cercanos a 0 fuerzan a que aumentemos la cantidad de etapas para lograr convergencia, haciendo que el algoritmo sea más lento, pero corremos menos riesgo de sobreajustar
+      - [`max_depth`](https://xgboosting.com/configure-xgboost-max_depth-parameter/): la profundidad máxima del árbol
+        - Funciona de la misma forma que vimos en la sección "Decision trees parameter tuning"
+      - [`min_child_weight`](https://xgboosting.com/configure-xgboost-min_child_weight-parameter/): nos permite controlar el tamaño mínimo de una partición
+        - Dos casos:
+          - En regresión es, efectivamente, el número [mínimo posible de instancias en un nodo](https://xgboost.readthedocs.io/en/stable/parameter.html#parameters-for-tree-booster)
+          - En clasificación resulta tanto un _proxy_ del [nivel mínimo de pureza que aceptaremos](https://stats.stackexchange.com/a/323459) como de la cantidad de instancias mínimas que aceptaremos en un nodo
+        - Se calcula a partir de la suma de los hessianos (segundas derivadas) de la función de error que estamos optimizando con el algoritmo
+        - En particular, este parámetro fija el valor mínimo que debe tener esa suma en cada nodo del árbol
+        - La intuición en el caso de la clasificación es que, cuando las particiones resultan demasiado puras, los [hessianos tendrán valores cercanos a 0](https://stats.stackexchange.com/a/323459)
+        - También podemos ver que, para nodos con una pureza "baja" (suficientemente bien mezclados), esto controla el tamaño de las particiones:
+          - Pocos valores que sumar: la suma será probablemente baja
+          - Muchos valores que sumar: la suma será probablemente "alta"
+        - Luego, a mayor valor de `min_child_weight`, el modelo será más conservador:
+          - Los árboles serán más sencillos
+          - Corremos el riesgo de subajustar el modelo
+      - [`objective`](https://xgboost.readthedocs.io/en/stable/parameter.html#learning-task-parameters): determina la función de costo o error (función objetivo) que optimizará el algoritmo
+        - El valor `binary:logistic` indica que queremos utilizar un modelo de regresión logística para clasificación binaria y que el modelo debe retornar probabilidades
+          - El algoritmo usa un _ensemble_ de árboles de regresión para producir un valor real (no una etiqueta)
+          - Luego suma todos esos valores para producir un _score_
+          - Dicho _score_ es tranformado con una _sigmoide_ (función logística) para producir una probabilidad (tal y como vimos en el [módulo sobre clasificación](./es_classification.md))
+          - Finalmente, el modelo evalúa el error que está cometiendo usando las probabilidades recién calculadas
+            - Si no cambiamos el valor por omisión de [`eval_metric`](https://xgboosting.com/configure-xgboost-eval_metric-parameter/), el desempeño de este modelo será medido usando el logaritmo de la función de costo
+        - Debemos [consultar la documentación](https://xgboost.readthedocs.io/en/stable/parameter.html#learning-task-parameters) para conocer todos los valores posibles de `objective` (información adicional en el sitio web [XGBoosting](https://xgboosting.com/configure-xgboost-objective-parameter/))
+      - `nthread` y `seed` son autoexplicativas mientras que `verbosity` es [muy sencilla de entender](https://xgboosting.com/configure-xgboost-verbosity-parameter/)
+- El argumento `num_boost_round` de `xgboost.train` fija la cantidad de etapas de _boosting_
+  - Por omisión, el algoritmo ejecutará la totalidad de las etapas sin importar acaso el modelo está mejorando o si estamos sobreajustando a los datos
+  - Usamos el parámetro [`early_stopping_rounds`](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.training) (un número entero) para evitar que el algoritmo siga corriendo a pesar de que el desempeño del modelo no esté mejorando
+  - El algoritmo se detendrá cuando pasen `early_stopping_rounds` etapas de _boosting_ sin que mejore la métrica especificada en `eval_metric`
+  - Cuando ocupemos este parámetro tendremos también que especificar el conjunto donde queremos que se calcule la métrica, lo que hacemos a través del parámetro `evals`
+- Ejemplo para visualizar cómo evoluciona el ROC AUC con cada etapa de _boosting_
+  - Entrenamiento:
+    ```python
+    %%capture output
+
+    xgb_params = {
+      'eta': 0.3,
+      'max_depth': 6,
+      'min_child_weight': 1,
+
+      'objective': 'binary:logistic',
+      'eval_metric': 'auc',
+
+      'nthread': 8,
+      'seed': 1,
+      'verbosity': 1,
+    }
+
+    model = xgb.train(xgb_params, dtrain, num_boost_round=200,
+                      verbose_eval=5,
+                      evals=watchlist)
+    ```
+    - Fijamos ROC AUC como métrica de evaluación del desempeño del modelo con `'eval_metric': 'auc'`
+    - Este entrenamiento tiene 200 etapas de boosting y los resultados serán impresos en pantalla cada 5 etapas de _boosting_
+    - `%%capture output`: esta es una "función mágica" de IPython que nos permite capturar lo que se estaría imprimiendo en pantalla y almacenarlo en una variable (en este caso, `output`)
+      - Esto solo funcionará en Jupyter (y, probablemente, en IPython)
+    - Existe una forma alternativa de acceder a estos resultados usando el argumento `evals_result` de la forma en que se muestra [en este ejemplo](https://github.com/dmlc/xgboost/blob/master/demo/guide-python/evals_result.py)
+  - Visualización:
+    ```python
+    def parse_xgb_output(output):
+      results = []
+
+      for line in output.stdout.strip().split('\n'):
+        it_line, train_line, val_line = line.split('\t')
+
+        it = int(it_line.strip('[]'))
+        train = float(train_line.split(':')[1])
+        val = float(val_line.split(':')[1])
+
+        results.append((it, train, val))
+
+      columns = ['num_iter', 'train_auc', 'val_auc']
+      df_results = pd.DataFrame(results, columns=columns)
+      return df_results
+
+    df_score = parse_xgb_output(output)
+    plt.plot(df_score.num_iter, df_score.train_auc, label='train')
+    plt.plot(df_score.num_iter, df_score.val_auc, label='val')
+    plt.legend()
+    ```
+    - El resultado es que, a más tardar en la iteración 40 o 50, el modelo simplemente sobreajusta
+      - ROC AUC es prácticamente 1 para el conjunto de entrenamiento
+      - Y la tendencia del ROC AUC en el conjunto de validación cae
+    - Si graficamos el ROC AUC del conjunto de validación por sí solo (`plt.plot(df_score.num_iter, df_score.val_auc, label='val'); plt.legend()`), veremos que bastaba con unas 30 etapas de _boosting_ para maximizarlo
+    - Pero como no usamos el parámetro `early_stopping_rounds`, el algoritmo siguió ejecutándose durante las `num_boost_round` etapas de _boosting_ que le pedimos
+  - Si bien lo lógico es usar `early_stopping_rounds` para ahorrarnos tiempo de cálculo de más y evitar sobreajuste, también tiene valor observar cómo se comportan las predicciones del modelo para entender su funcionamiento
 
 # XGBoost parameter tuning
 
