@@ -744,10 +744,10 @@ author: Daniel Neira
         - `dart`: útil cuando `gbtree` está sobreajustando
         - `gblinear`: útil para datos en altas dimensions y _sparse_ cuyas relaciones se puedan aproximar con modelos lineales (produce modelos más sencillos que `gbtree`)
     - (_Bonus_) Significado de las opciones especificadas:
-      - [`eta`](https://xgboosting.com/configure-xgboost-eta-parameter/): factor por el que multiplicar los pesos en cada etapa para evitar sobreajuste
-        - Controla la variación del valor de los pesos en cada etapa
-        - Valores cercanos a 1 hacen que el algoritmo sea más rápido, pero corremos el riesgo de sobreajustar
-        - Valores cercanos a 0 fuerzan a que aumentemos la cantidad de etapas para lograr convergencia, haciendo que el algoritmo sea más lento, pero corremos menos riesgo de sobreajustar
+      - [`eta`](https://xgboosting.com/configure-xgboost-eta-parameter/): factor por el que multiplicar la salida de cada uno de los árboles usados durante cada etapa de _boosting_
+        - En cada etapa $t$ de _boosting_: $\hat{y}^{(t)}=\hat{y}^{(t-1)}+\eta f_t(x)$, con $\eta \in [0, 1]$ y $f_t(x)$ la función que representa los árboles de la etapa $t$
+        - Valores cercanos a 1 hacen que el algoritmo sea más rápido, pero su desempeño tenderá a ser subóptimo ya que las correcciones serán de gran magnitud y podrían intentar seguir el ruido en lugar de la señal, lo que dificulará la convergencia al óptimo (sufrirá de _overshooting_)
+        - Valores cercanos a 0 fuerzan a que aumentemos la cantidad de etapas para lograr convergencia ya que cada paso es "pequeño", haciendo que el algoritmo sea más lento, pero las correcciones serán más precisas, minimizando el riesgo de sobreajustar y mejorando las posibilidades de llegar al óptimo
       - [`max_depth`](https://xgboosting.com/configure-xgboost-max_depth-parameter/): la profundidad máxima del árbol
         - Funciona de la misma forma que vimos en la sección "Decision trees parameter tuning"
       - [`min_child_weight`](https://xgboosting.com/configure-xgboost-min_child_weight-parameter/): nos permite controlar el tamaño mínimo de una partición
