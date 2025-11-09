@@ -1027,7 +1027,89 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Los 3 modelos que construimos en este módulo:
+  - Árbol de decisión:
+    ```python
+    dt = DecisionTreeClassifier(max_depth=6, min_samples_leaf=15)
+    dt.fit(X_train, y_train)
+    y_pred = dt.predict_proba(X_val)[:, 1]
+    roc_auc_score(y_val, y_pred)  # 0.785
+    ```
+  - _Random forests_:
+    ```python
+    rf = RandomForestClassifier(n_estimators=200,
+                                max_depth=10,
+                                min_samples_leaf=3,
+                                random_state=1)
+    rf.fit(X_train, y_train)
+    y_pred = rf.predict_proba(X_val)[:, 1]
+    roc_auc_score(y_val, y_pred)  # 0.825
+    ```
+  - XGBoost:
+    ```python
+    xgb_params = {
+      'eta': 0.1,
+      'max_depth': 3,
+      'min_child_weight': 1,
+
+      'objective': 'binary:logistic',
+      'eval_metric': 'auc',
+
+      'nthread': 8,
+      'seed': 1,
+      'verbosity': 1,
+    }
+
+    model = xgb.train(xgb_params, dtrain, num_boost_round=175)
+
+    y_pred = model.predict(dval)
+    roc_auc_score(y_val, y_pred)  # 0.836
+    ```
+- Procedemos con el modelo ajustado con XGBoost
+  - Debemos ahora entrenarlo usando tanto el conjunto de entrenamiento como el de validación y luego evaluar su desempeño con el conjunto de prueba
+    ```python
+    # resetear el índice del dataframe
+    df_full_train = df_full_train.reset_index(drop=True)
+    # transformar los estados (default, ok) a (1, 0) y almacenarlos en un arreglo nuevo
+    y_full_train = (df_full_train.status == 'default').astype(int).values
+    # deshacernos del atributo `status` del dataframe
+    del df_full_train['status']
+    # codificar los datos
+    dicts_full_train = df_full_train.to_dict(orient='records')
+    dv = DictVectorizer(sparse=False)
+    X_full_train = dv.fit_transform(dicts_full_train)
+    dicts_test = df_test.to_dict(orient='records')
+    X_test = dv.transform(dicts_test)
+    # almacenar los datos en estructuras `DMatrix` de XGBoost
+    dfulltrain = xgb.DMatrix(X_full_train, label=y_full_train,
+                    feature_names=dv.get_feature_names_out())
+    dtest = xgb.DMatrix(X_test, feature_names=dv.get_feature_names_out())
+    # entrenar el modelo que tenía mejor desempeño usando ahora los datos de entrenamiento y validación
+    xgb_params = {
+      'eta': 0.1,
+      'max_depth': 3,
+      'min_child_weight': 1,
+
+      'objective': 'binary:logistic',
+      'eval_metric': 'auc',
+
+      'nthread': 8,
+      'seed': 1,
+      'verbosity': 1,
+    }
+    model = xgb.train(xgb_params, dfulltrain, num_boost_round=175)
+    # generar predicciones
+    y_pred = model.predict(dtest)
+    # evaluar el desempeño del modelo con el conjunto de prueba
+    roc_auc_score(y_test, y_pred)  # 0.832
+    ```
+  - Vemos que el ROC AUC del modelo con los datos de prueba es similar a aquel que obtuvimos con los datos de validación
+  - Así que este modelo funciona correctamente (tiene un desempeño cercano al esperado) y no hace falta corregir nada
+  - Lo anterior no significa que no podamos entrenar un modelo de mejor desempeño al actual
+    - Significa nada más que el modelo que obtuvimos no sobreajustó los datos de entrenamiento
+- Se cumple en general que, cuando contamos con datos tabulares, los modelos ajustados con XGBoost tienen mejor desempeño que otros modelos alternativos
+  - Pero tenemos que pagar esa ventaja con un alto grado de complejidad
+  - Tenemos que comprender qué es lo que XGBoost está optimizando y cómo lo está haciendo para poder exprimir todo su potencial
 
 # Summary
 
