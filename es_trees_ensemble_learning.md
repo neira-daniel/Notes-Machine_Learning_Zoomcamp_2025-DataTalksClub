@@ -1107,9 +1107,16 @@ author: Daniel Neira
   - Así que este modelo funciona correctamente (tiene un desempeño cercano al esperado) y no hace falta corregir nada
   - Lo anterior no significa que no podamos entrenar un modelo de mejor desempeño al actual
     - Significa nada más que el modelo que obtuvimos no sobreajustó los datos de entrenamiento
-- Se cumple en general que, cuando contamos con datos tabulares, los modelos ajustados con XGBoost tienen mejor desempeño que otros modelos alternativos
+- En general, cuando contamos con datos tabulares, no hay otro algoritmo que supere el desempeño de XGBoost (incluyendo algoritmos similares, como LightGBM o CatBoost) de forma consistente
   - Pero tenemos que pagar esa ventaja con un alto grado de complejidad
-  - Tenemos que comprender qué es lo que XGBoost está optimizando y cómo lo está haciendo para poder exprimir todo su potencial
+  - Tenemos que comprender a cabalidad qué es lo que XGBoost está optimizando y cómo lo está haciendo para poder exprimir todo su potencial
+- (_Bonus_) Cuando hablamos de datos tabulares:
+  - Informalmente, nos referimos al tipo de información que almacenaríamos en una planilla de cálculo
+  - De manera algo más formal, nos referimos al tipo de dato que no tiene estructura espacial ni secuencial
+    - O sea, donde el orden de los registros y de los atributos es irrelevante
+  - Ejemplos de datos tabulares no estructurados (donde XGBoost no funciona y donde los algoritmos de _deep learning_ tiene una ventaja clara sobre todos los demás)
+    - Imágenes: el valor de un píxel depende de los valores de los píxeles vecinos
+    - Audio: el orden de las muestras es fundamental
 
 # Summary
 
@@ -1162,7 +1169,7 @@ author: Daniel Neira
   - No debemos olvidar que también podemos usar árboles para abordar problemas de regresión
     - sklearn: `DecisionTreeRegressor` y `RandomForestRegressor`
     - XGBoost: `objective=reg:squarederror`
-      - Cuando se trata de datos tabulares, sea en clasificación o regresión, no hay otro algoritmo que supere de manera consistente a XGBoost
+      - Cuando se trata de datos tabulares, sea en clasificación o regresión, no hay otro algoritmo que supere a XGBoost de manera consistente
 
 # Homework
 
