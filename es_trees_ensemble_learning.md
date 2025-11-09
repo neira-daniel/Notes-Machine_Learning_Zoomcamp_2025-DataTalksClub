@@ -1003,7 +1003,14 @@ author: Daniel Neira
   - [`subsample`](https://xgboosting.com/configure-xgboost-subsample-parameter/) y [`colsample_bytree`](https://xgboosting.com/tune-xgboost-colsample_bytree-parameter/), los que incorporan ideas similares a las de _random forests_ (sampleo por observaciones y por atributos)
     - `subsample`: probar con valores como 0.3, 0.5, 0.7 y 1.0 (valor por omisión)
     - `colsample_bytree`: probar valores como 0.3, 0.6 y 1.0 (valor por omisión) y eventualmente explorar la vecindad del valor que dé mejores resultados
-  - [`lambda`](https://xgboosting.com/tune-xgboost-reg_lambda-parameter/) y [`alpha`](https://xgboosting.com/configure-xgboost-alpha-parameter/)
+  - [`lambda`](https://xgboosting.com/tune-xgboost-reg_lambda-parameter/) (regularización L2 sobre las predicciones o pesos de cada una de las hojas del árbol de la etapa $t$ de _boosting_) y [`alpha`](https://xgboosting.com/configure-xgboost-alpha-parameter/) (lo mismo, pero con regularización L1)
+    - Función de costo en cada etapa $t$ de _boosting_: $\mathcal{L}^{(t)} = \sum_{i=1}^n \ell\big(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)\big) + \Omega(f_t)$
+    - Regularización en la expresión anterior: $\Omega(f_t) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T} w_j^2 + \alpha \sum_{j=1}^{T} |w_j|$
+    - Las predicciones (pesos) de cada hoja $j$: $\omega_j$
+    - La relación entre $f_t(x_i)$ y $\omega_j$ es $f_t(x_i)=\omega_{q(x_i)}$, donde $q(x_i)$ mapea $x_i$ a la hoja que le corresponde
+    - Regularización L2: suaviza las predicciones, evitando pesos de gran magnitud
+    - Regularización L1: empuja los pesos de magnitud pequeña a cero, podando las hojas cuya predicción no tenía tanta influencia en el valor final (hace que $\hat{y}^{(t)}=\hat{y}^{(t-1)}+\eta f_t(x_i)$ se vuelva $\hat{y}^{(t)}=\hat{y}^{(t-1)}$ para la muestra $x_i$ involucrada)
+    - Como referencia, la función de costo general es $\mathcal{L} = \sum_{t=1}^{T} \mathcal{L}^{(t)}$ y con XGBoost la [optimizamos de forma _greedy_](https://en.wikipedia.org/wiki/Greedy_algorithm)
 - Existen estrategias distintas a las que vimos para ajustar los hiperparámetros del algoritmo
   - XGBoost es un algoritmo complejo y tenemos varias opciones para configurarlo
   - La estrategia que vimos aquí es útil para el instructor, pero eso no significa que sea la mejor
