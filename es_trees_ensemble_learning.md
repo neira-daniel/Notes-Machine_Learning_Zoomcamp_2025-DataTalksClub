@@ -847,7 +847,167 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- Existen al menos 3 hiperparámetros que influyen fuertemente en el desempeño del algoritmo XGBooost:
+  - `eta` o "tasa de aprendizaje"
+  - `max_depth` o profundidad máxima de los árboles
+  - `min_child_weight`, un _proxy_ de tanto el tamaño mínimo de las particiones como de su pureza
+- El instructor ajusta dichos parámetros en el orden recién presentado
+  - Será lo que haremos a continuación
+- `eta` es un hiperparámetro muy importante de XGBoost
+  - Como mencionamos en la sección pasada:
+    - `eta` ($\eta$) es un factor que limita el efecto de la corrección $f_t(x)$ que aplicaremos en cada etapa $t$ de _boosting_
+      - $\hat{y}^{(t)}=\hat{y}^{(t-1)}+\eta f_t(x)$
+    - $\eta \to 1$:
+      - No limitamos la corrección
+      - El algoritmo alcanza el óptimo para esa configuración rápidamente
+      - Pero este óptimo suele estar lejos del óptimo global
+      - Eso se debe al problema del _overshooting_: los pasos en cada corrección son tan grandes que el modelo solo es capaz de capturar la dinámica más gruesa de los datos y no sus sutilezas
+    - $\eta \to 0$:
+      - Limitamos fuertemente la corrección
+      - Apenas dejamos que los árboles de una etapa corrijan el error cometido por los árboles de la etapa anterior
+      - El algoritmo necesita de gran cantidad de etapas de _boosting_ para alcanzar el óptimo, lo que es caro en tiempo y en cómputo
+      - El modelo será capaz de capturar la dinámica de los datos correctamente, pero le tomará tanto tiempo alcanzar el óptimo que la mayoría de las veces no valdrá la pena usar valores de $\eta$ tan pequeños
+    - El valor por omisión de `eta` en XGBoost es 0.3
+  - Deseamos encontrar un `eta` que sea capaz de seguir la dinámica de los datos sin sufrir de _overshooting_ ni demorar un tiempo excesivo en alcanzar el óptimo
+    - Ajustamos su valor como el de cualquier otro hiperparámetro:
+      ```python
+      scores = {}
+
+      watchlist = [(dtrain, 'train'), (dval, 'val')]
+
+      %%capture output
+
+      for eta in [0.01, 0.05, 0.1, 0.3, 1.0]:
+
+        xgb_params = {
+          'eta': eta,
+          'max_depth': 6,
+          'min_child_weight': 1,
+
+          'objective': 'binary:logistic',
+          'eval_metric': 'auc',
+
+          'nthread': 8,
+          'seed': 1,
+          'verbosity': 1,
+        }
+
+        model = xgb.train(xgb_params, dtrain, num_boost_round=200,
+                          verbose_eval=5,
+                          evals=watchlist)
+
+        key = 'eta=%s' % (xgb_params['eta'])
+        scores[key] = parse_xgb_output(output)
+
+      for key, df_score in scores.items():
+        plt.plot(df_score.num_iter, df_score.val_auc, label=key)
+      plt.legend()
+      ```
+    - El gráfico nos mostrará:
+      - Las diferencias en las velocidades de convergencia al óptimo
+        - Los modelos con valores de `eta` pequeños demoran más, pero alcanzan un óptimo superior al de los modelos con valores de `eta` claramente más grandes
+        - Y se da también el caso de un modelo (`eta=0.01`) que todavía no alcanza su óptimo incluso luego de 200 etapas de _boosting_
+      - También muestran que existe una región de valores donde no se puede asumir que, a `eta` más pequeño, se alcanza un mejor óptimo
+        - En el caso del [entrenamiento de la clase](https://youtu.be/VX6ftRzYROM?t=271), el modelo con `eta=0.1` alcanza un óptimo que es mejor al de `eta=0.05` en la mitad de las iteraciones de este último
+      - Y cómo cae el desempeño de los modelos luego de alcanzar el óptimo
+        - Esa caída señala que se entró en la etapa de sobreajuste
+  - El mejor valor de `eta` para el entrenamiento de la clase es `eta=0.1`
+  - Ajustaremos ahora `max_depth` con `eta=0.1` fijo
+- `max_depth` funciona de la misma forma que en _random forests_
+  - Lo ajustaremos de forma análoga a `eta`
+    ```python
+    scores = {}
+
+    %%capture output
+
+    for max_depth in [3, 4, 6, 10]:
+
+      xgb_params = {
+        'eta': 0.1,
+        'max_depth': max_depth,
+        'min_child_weight': 1,
+
+        'objective': 'binary:logistic',
+        'eval_metric': 'auc',
+
+        'nthread': 8,
+        'seed': 1,
+        'verbosity': 1,
+      }
+
+      model = xgb.train(xgb_params, dtrain, num_boost_round=200,
+                        verbose_eval=5,
+                        evals=watchlist)
+
+      key = 'max_depth=%s' % (xgb_params['max_depth'])
+      scores[key] = parse_xgb_output(output)
+
+    for key, df_score in scores.items():
+      plt.plot(df_score.num_iter, df_score.val_auc, label=key)
+    plt.legend()
+    ```
+  - Vemos [en el video](https://www.youtube.com/watch?v=VX6ftRzYROM&t=10m10s) que `max_depth=3` es el óptimo entre las profundidades máximas probadas
+- Y terminamos con `min_child_weight`
+  - Óptimos hasta este punto: `eta=0.1` y `max_depth=3`
+    ```python
+    scores = {}
+
+    %%capture output
+
+    for min_child_weight in [1, 10, 30]:
+
+      xgb_params = {
+        'eta': 0.1,
+        'max_depth': 3,
+        'min_child_weight': min_child_weight,
+
+        'objective': 'binary:logistic',
+        'eval_metric': 'auc',
+
+        'nthread': 8,
+        'seed': 1,
+        'verbosity': 1,
+      }
+
+      model = xgb.train(xgb_params, dtrain, num_boost_round=200,
+                        verbose_eval=5,
+                        evals=watchlist)
+
+      key = 'min_child_weight=%s' % (xgb_params['min_child_weight'])
+      scores[key] = parse_xgb_output(output)
+
+    for key, df_score in scores.items():
+      plt.plot(df_score.num_iter, df_score.val_auc, label=key)
+    plt.legend()
+    ```
+  - En este caso [escogemos](https://www.youtube.com/watch?v=VX6ftRzYROM&t=13m52s) `max_child_depth=1`
+  - En base a los gráficos también nos quedamos con `num_boost_round=175` (número de iteraciones o etapas de `boosting`)
+- El modelo final:
+  ```python
+  xgb_params = {
+    'eta': 0.1,
+    'max_depth': 3,
+    'min_child_weight': 1,
+
+    'objective': 'binary:logistic',
+    'eval_metric': 'auc',
+
+    'nthread': 8,
+    'seed': 1,
+    'verbosity': 1,
+  }
+
+  model = xgb.train(xgb_params, dtrain, num_boost_round=175)
+  ```
+- Otros [hiperparámetros](https://xgboost.readthedocs.io/en/stable/parameter.html) a tener en cuenta:
+  - [`subsample`](https://xgboosting.com/configure-xgboost-subsample-parameter/) y [`colsample_bytree`](https://xgboosting.com/tune-xgboost-colsample_bytree-parameter/), los que incorporan ideas similares a las de _random forests_ (sampleo por observaciones y por atributos)
+    - `subsample`: probar con valores como 0.3, 0.5, 0.7 y 1.0 (valor por omisión)
+    - `colsample_bytree`: probar valores como 0.3, 0.6 y 1.0 (valor por omisión) y eventualmente explorar la vecindad del valor que dé mejores resultados
+  - [`lambda`](https://xgboosting.com/tune-xgboost-reg_lambda-parameter/) y [`alpha`](https://xgboosting.com/configure-xgboost-alpha-parameter/)
+- Existen estrategias distintas a las que vimos para ajustar los hiperparámetros del algoritmo
+  - XGBoost es un algoritmo complejo y tenemos varias opciones para configurarlo
+  - La estrategia que vimos aquí es útil para el instructor, pero eso no significa que sea la mejor
+  - Hay que evaluar acaso vale realmente la pena dedicarle más tiempo al ajuste de los hiperparámetros (tenemos que tener presente el principio de Pareto)
 
 # Selecting the best model
 
