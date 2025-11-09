@@ -1122,7 +1122,7 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- N/A
 
 # Explore more
 
@@ -1132,7 +1132,37 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- En este módulo no hablamos de explorar los datos, pero siempre es recomendable trabajar inicialmente con ellos para hacernos una idea de su naturaleza
+  - Análisis exploratorio de datos
+  - _Feature engineering_
+- Con respecto a _random forests_:
+  - Podemos probar qué efecto tiene ajustar los hiperparámetros `max_features` y `bootstrap`
+  - Podemos explorar una variación del algoritmo denominada "extremely randomized trees classifier" ("extra-trees")
+    - sklearn la implementa como [`ExtraTreesClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html)
+    - (_Bonus_) Comparación entre ExtraTrees y _random forests_:
+      - ExtraTrees siempre tiene acceso a todo el conjunto de entrenamiento
+        - Cada árbol del _random forest_ obtiene una muestra con resposición del total del conjunto de entrenamiento
+      - Los árboles de ambos algoritmos reciben un grupo de atributos aleatorios con los que trabajar en cada partición
+      - ExtraTrees particiona los datos usando umbrales escogidos al azar
+        - Dado un criterio de partición (_misclassification rate_, entropía o, usualmente, Gini):
+          - ExtraTrees evalúa los umbrales escogidos al azar y se queda con el mejor de acuerdo al criterio de partición escogido
+          - Mientras que _random forests_ busca la partición que optimiza el criterio de partición usando todo el espacio de soluciones
+      - Ambos algoritmos utilizan los mismos criterios de parada que limitan el crecimiento de los árboles
+      - Y ambos algoritmos generan una predicción:
+        - Usando votación cuando se trata de clasificación
+        - Promediando cuando es un problema de regresión
+- Con respecto a XGBoost
+  - XGBoost funciona sin necesidad de imputar datos faltantes
+    - Podemos probar y ver acaso las predicciones mejoran cuando no imputamos los valores `NaN`
+  - Saber cómo trabjar con `subsample` y `colsample_bytree` podría ayudarnos a mejorar las predicciones
+- Con respecto a los árboles en general:
+  - Podemos explorar cómo usar _random forests_ y XGBoost para detectar los atributos más importantes para el modelamiento
+    - [Ejemplo](https://scikit-learn.org/stable/auto_examples/ensemble/plot_forest_importances.html) usando _random forests_
+    - [Ejemplo](https://stackoverflow.com/questions/37627923/how-to-get-feature-importance-in-xgboost) usando XGBoost
+  - No debemos olvidar que también podemos usar árboles para abordar problemas de regresión
+    - sklearn: `DecisionTreeRegressor` y `RandomForestRegressor`
+    - XGBoost: `objective=reg:squarederror`
+      - Cuando se trata de datos tabulares, sea en clasificación o regresión, no hay otro algoritmo que supere de manera consistente a XGBoost
 
 # Homework
 
