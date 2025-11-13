@@ -1179,4 +1179,4 @@ author: Daniel Neira
 
 ## Notas
 
-- x
+- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw06)

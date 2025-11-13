@@ -521,4 +521,4 @@ author: Daniel Neira
 
 ## Notas
 
-- N/A (resuelto en un cuaderno de Jupyter)
+- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw02)

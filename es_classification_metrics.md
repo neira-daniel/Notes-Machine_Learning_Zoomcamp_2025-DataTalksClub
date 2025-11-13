@@ -516,4 +516,4 @@ author: Daniel Neira
 
 ## Notas
 
-- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw04?tab=readme-ov-file)
+- [Solución](https://github.com/neira-daniel/machine-learning-zoomcamp-hw04)
