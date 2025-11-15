@@ -224,13 +224,19 @@ author: Daniel Neira
     ```
 - (_Bonus_) La "cantidad" de información mutua entre dos variables es difícil de interpretar
   - Son pocas las certezas que un valor de información mutua nos puede entregar por sí solo
-    - En particular, el único valor que tiene significado intrínseco es 0: cuando la información mutua es cero estamos en presencia de variables independientes
-    - Pero, por ejemplo, no hay ninguna cifra que, por sí misma, nos diga cuando dos variables están perfectamente correlacionadas
+    - En particular, sabemos:
+      - La información mutua solo puede ser no-negativa
+      - Y que el único valor que tiene significado intrínseco es 0: cuando la información mutua es cero estamos en presencia de variables independientes
+    - Pero, por ejemplo, no hay ninguna cifra que, por sí misma, nos diga cuándo dos variables están perfectamente correlacionadas
   - Las unidades en las que se expresa la información mutua no tienen nada que ver con las unidades de las variables de nuestro problema
   - Los valores tampoco están normalizados, de modo que solo sabemos que pueden ser mayores o iguales a 0
-  - Cuando calculamos la información mutua entre $Y$ y $X$ estamos midiendo cuánto se reduce la incertidumbre en el valor de $Y$ al conocer el valor de $X$ (este valor no es simétrico)
-    - Pero la implementación de `mutual_info_score` en Sklearn sí lo es
-    - Nota: explorar [`mutual_info_regression`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_regression.html) y [`mutual_info_classif`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html), las que calculan la información mutua entre una matriz de atributos y una variable objetivo continua o discreta, respectivamente
+  - Cuando calculamos la información mutua entre $Y$ y $X$ estamos midiendo cuánto se reduce la incertidumbre en el valor de $Y$ al conocer el valor de $X$
+    - La información mutua $I$ entre dos variables aleatorias $X$ e $Y$ es simétrica, por lo que $I(X, Y)=I(Y, X)$
+    - Además de `mutual_info_churn_score`, sklearn también implementa los siguientes estimadores de información mutua:
+      - [`mutual_info_regression`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_regression.html): información mutua entre una matriz de atributos y una variable objetivo continua
+      - [`mutual_info_classif`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html): análogo a lo anterior, pero con un objetivo discreto
+    - En los dos casos anteriores, sklearn asume que el primer argumento que le pasemos a la función será la matriz de atributos y el siguiente será el objetivo
+    - Si la matriz de atributos contiene variables categóricas, tendremos que discretizarlas para que los algoritmos funcionen
   - Esta incertidumbre se mide en términos de entropía
     - Cuando $Y$ tiene una entropía alta, incluso pequeñas disminuciones de este valor gracias a $X$ pueden producir un valor de información mutua de gran magnitud
     - Es por eso que en estas aplicaciones no nos fijamos en los valores de información mutua en sí pues su interpretación es compleja y no nos entregan información práctica relevante
