@@ -39,14 +39,14 @@ Apuntes personales para el curso en línea "[Machine Learning Zoomcamp: A Free 4
 # Module 7: Neural Networks & Deep Learning
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/08-deep-learning) (inglés)
-- Apuntes
+- [Apuntes](./es_neural_networks.md)
 
 # Module 8: Serverless Deep Learning
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/09-serverless) (inglés)
-- Apuntes
+- [Apuntes](./es_serverless_deep_learning.md)
 
 # Module 9: Kubernetes & TensorFlow Serving
 
 - [Material oficial](https://github.com/DataTalksClub/machine-learning-zoomcamp/blob/master/10-kubernetes) (inglés)
-- Apuntes
+- [Apuntes](./es_kubernetes_tensorflow_serving.md)
