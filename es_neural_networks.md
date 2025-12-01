@@ -37,7 +37,19 @@ How to watch it:
 
 ## Notas
 
-- x
+- Hasta ahora solo hemos hablado de cómo trabajar con datos tabulares
+- En este módulo liberaremos esa restricción y nos concentraremos en la clasificación de imágenes
+- En particular:
+    - Ajustaremos un clasificador multi-clase usando redes neuronales
+    - Funcionamiento: dada una imagen, clasificaremos su contenido usando un modelo que escoge 1 de 10 categorías posibles
+- Nos concentraremos en los aspectos prácticos de trabajar con redes neuronales
+    - Podemos consultar [CS231n: Deep Learning for Computer Vision](https://cs231n.github.io/) (antiguo nombre en 2021: Convolutional neural networks for visual recognition) para estudiar la teoría que hay detrás
+- Aplicación de este clasificador:
+    - Imaginaremos que contamos con un sitio de ventas en línea
+    - Le ofreceremos este servicio a los vendedores para que puedan clasificar sus productos en el sitio de ventas
+    - Llamaremos a este servicio "Fashion classification service"
+- Datos que utilizaremos: "[Clothing dataset (subset)](https://github.com/alexeygrigorev/clothing-dataset-small)"
+    - Versión completa: "[Clothing dataset (full, high resolution)](https://www.kaggle.com/datasets/agrigorev/clothing-dataset-full)"
 
 # TensorFlow and Keras
 
