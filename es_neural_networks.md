@@ -61,7 +61,56 @@ How to watch it:
 
 ## Notas
 
-- x
+- TensorFlow: librería para entrenar modelos de *deep learning*
+- Keras: construida sobre TensorFlow, nos ofrece una API más sencilla para trabajar con redes neuronales
+- Instrucciones oficiales [para instalar TensorFlow](https://www.tensorflow.org/install):
+    - Para trabajar con la CPU: `pip install tensorflow`
+    - Para trabajar con la GPU: `pip install tensorflow[and-cuda]`
+- Como alternativa, podemos usar el contenedor de Docker oficial de TensorFlow:
+    ```bash
+    docker pull tensorflow/tensorflow:latest  # Download latest stable image
+    docker run -it -p 8888:8888 tensorflow/tensorflow:latest-jupyter  # Start Jupyter server
+    ```
+- Importar TensorFlow y Keras:
+    ```python
+    import tensorflow as tf
+    from tensorflow import keras
+    ```
+    - Es posible que TensorFlow nos haga algunas advertencias al importarlo
+        - Serán usualmente nada más que mensajes informativos
+    - Importar Keras no debería imprimir ninguna advertencia en pantalla
+- Ejemplo para cargar una imagen de entrenamiento:
+    ```python
+    from tensorflow.keras.preprocessing.image import load_img
+    path = './clothing-dataset-small-master/train/t-shirt/'
+    name = '5f0a3fa0-6a3d-4b68-b213-72766a643de7.jpg'
+    fullname = path + name
+    load_img(fullname)
+    ```
+- Cuando trabajemos con redes neuronales e imágenes, será habitual tener que escalar las imágenes al tamaño esperado por la red
+    - Ejemplos: 299x299, 224x224, 150x150
+    - Esto será válido cuando nos apoyemos en redes neuronales pre-entrenadas
+        - En este caso tendremos que consultar la documentación de dicha red para saber qué tipos de objetos ella necesita para funcionar correctamente
+    - Escalamos la imagen al cargarla usando el parámetro `target_size`:
+    - Por ejemplo, para llevar la imagen a una de dimensiones 299x299:
+        ```python
+        load_img(fullname, target_size=(299, 299))
+        ```
+- Representación de la imagen en memoria:
+    - Es un arreglo de valores numéricos
+    - En el caso de una imagen en color: 3 canales
+        - R: rojo
+        - G: verde
+        - B: azul
+    - Este arreglo tendrá así 3 dimensiones
+        - Alto
+        - Ancho
+        - Canal
+    - En el caso de la imagen de 299 por 299 píxeles del ejemplo, `np.array(img).shape` retorna `(299, 299, 3)`
+    - Podemos ver también que `np.array(img).dtype` retorna `uint8`:
+        - Significa que codifica la información usando enteros sin signo de 8 bits
+        - Estos son 2^8=256 niveles, los que van de 0 a 255 (no cubre los números negativos dado que el tipo es sin signo)
+
 
 # Pre-trained convolutional neural networks
 
