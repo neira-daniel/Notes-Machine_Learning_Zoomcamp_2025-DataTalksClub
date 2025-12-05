@@ -122,7 +122,37 @@ How to watch it:
 
 ## Notas
 
-- x
+- Podemos utilizar redes neuronales ya entrenadas como base para nuestros modelos
+- Keras nos da acceso directo a [docenas de estos modelos](https://keras.io/api/applications/)
+- En esta ocasión utilizaremos [Xception](https://keras.io/api/applications/xception/):
+    ```python
+    from tensorflow.keras.applications.xception import Xception
+    from tensorflow.keras.applications.xception import preprocess_input
+    from tensorflow.keras.applications.xception import decode_predictions
+    model = Xception(weights='imagenet', input_shape=(299, 299, 3))
+    X = preprocess_input(np.expand_dims(img, axis=0))
+    pred = model.predict(X)
+    decode_predictions(pred)
+    ```
+    - Debemos empaquetar la imagen para que el objeto tenga las dimensiones que la red neuronal de Xception espera
+    - Podemos hacerlo en este caso con `np.expand_dims(img, axis=0)`
+    - En otras situaciones, cuando estemos trabajando con más de 1 imagen, probablemente necesitaremos algo como `np.array([img_1, img_2, img_3, . . .])`
+    - Debemos también preprocesar el nuevo objeto usando `preprocess_input`, una función ad-hoc de Xception para transformar los valores de la imagen al espacio donde trabaja esta red neuronal en particular
+    - Cuando hacemos una predicción, obtenemos un arreglo de `n` x 1000 con:
+        - `n` la cantidad de imágenes que le pasamos a la red neuronal
+        - 1000 el número de etiquetas posibles (la cantidad de categorías con las que fue entrenada esta red neuronal)
+    - Cada uno de esos 1000 valores es la probabilidad de que la imagen que le pasamos a la red pertenezca a la categoría correspondiente
+    - Obtenemos una representación más amigable de los resultados usando la función `decode_predictions`
+        - Obtenemos:
+            ```
+            [[('n03595614', 'jersey', np.float32(0.68196267)),
+            ('n02916936', 'bulletproof_vest', np.float32(0.03814007)),
+            ('n04370456', 'sweatshirt', np.float32(0.03432477)),
+            ('n03710637', 'maillot', np.float32(0.011354245)),
+            ('n04525038', 'velvet', np.float32(0.0018453626))]]
+            ```
+        - En este caso, la red neuronal tiene un 68 % de certeza de que el objeto de la imagen es un "jersey" ([ejemplo](https://github.com/EliSchwartz/imagenet-sample-images/blob/master/n03595614_jersey.JPEG), supuestamente extraído del conjunto de datos original)
+- Cuando la red neuronal pre-entrenada que utilicemos no cumpla con nuestros requerimientos prácticos, podremos utilizarla como punto de partida para un nuevo entrenamiento, cosa que veremos más adelante
 
 # Convolutional neural networks
 
