@@ -164,7 +164,52 @@ How to watch it:
 
 ## Notas
 
-- x
+- "Convolutional neural networks": también conocidas por su sigla CNN
+- Las utilizamos en este caso para clasificar imágenes de dimensiones $(H, W, D)$
+    - $H$: alto
+    - $W$: ancho
+    - $D$: profundidad, siendo $D=3$ en el caso de imágenes con 3 canales de colores
+- Este tipo de redes neuronales contiene dos tipos de capas de interés: capas "convolucionales" y capas "densas"
+    - Las capas convolucionales actúan de forma local sobre el objeto de entrada y extraen de él los atributos de utilidad, aprendiéndolos a partir de los datos apoyándose en el valor de la función de pérdida que optimiza la red completa
+    - Las capas densas actúan de manera global sobre el objeto de entrada y se encargan de _mapear_ la información abstracta extraída por las capas convolucionales a las etiquetas, realizando así la clasificación
+- Entre las capas convolucionales y las capas densas ubicamos una etapa de "flattening"
+    - Esta se encarga de "aplanar" un tensor (arreglo multidimensional) de entrada, convirtiéndolo en un arreglo unidimensional
+    - Hacemos esto porque las capas densas solo pueden operar con arreglos unidimensionales
+- Además de las capas convolucionales y las densas y de la etapa de _aplanamiento_, podemos también agregar capas de "pooling":
+    - Estas se ubican entre capas convolucionales sucesivas
+    - Su rol es disminuir las dimensiones de los datos que están fluyendo a través de la red neuronal para reducir su número de parámetros y así alivianar la carga computacional del entrenamiento
+- Encontraremos en la literatura que las CNN incorporan otras capas adicionales a las mencionadas, pero no las cubriremos en esta introducción al tema
+- Capas convolucionales
+    - El algoritmo se inicializa con $n_i$ imágenes pequeñas por cada capa convolucional
+    - A cada una de estas imágenes pequeñas se les llama "filtro"
+    - Cada filtro comienza el entrenamiento conteniendo ruido (ningún patrón específico)
+    - Durante el entrenamiento, cada uno de los filtros de una capa es convolucionado con los datos de entrada
+        - En el caso de la primera capa, los datos de entrada son la imagen de referencia que queremos clasificar (cada uno de los pixeles a través de los 3 canales de colores)
+        - En las capas siguientes, los datos de entrada serán aquellos que la capa anterior haya producido
+    - Cada convolución produce un arreglo 2D al que se le llama "feature map"
+        - Calculamos la convolución sobre el objeto de entrada usando todas sus dimensiones a la vez: alto, ancho y profundidad
+        - Luego, pensar que iteramos sobre el eje de la profundidad y que calculamos convoluciones bidimensionales es un error
+    - Cada uno de los "feature maps" de una capa son apilados, creando un tensor 3D
+        - Dijimos antes que la imagen original es un tensor de dimensiones $(H, W, D)$
+        - Cada "feature map" tendrá dimensiones $(H_i, W_i)$ con $H_i \neq H$ y $W_i \neq W$
+            - Los valores exactos de $H_i$ y $W_i$ dependerán del tamaño de los filtros usados en cada capa $i$
+        - El tensor resultante tendrá dimensiones $(H_i, W_i, n_i)$
+    - La capa siguiente de la red (convolucional o no) recibe este objeto 3D y lo transforma y propaga hacia la salida
+    - En la salida se calcula el valor de la función de pérdida
+    - Este valor es utilizado, entre otras cosas, para aprender los patrones óptimos que deben contener los filtros
+- Capas "densas"
+    - Hablamos en plural porque es técnicamente posible incluir más de una de estas capas, pero lo mejor es utilizar solo 1
+    - Estas capas no trabajan con tensores, sino que con arreglos unidimensionales
+        - Es por eso que debemos aplanar el tensor de entrada a ellas
+    - Se les denomina densas porque mapean cada uno de los elementos del arreglo de entrada a las etiquetas de salida
+        - El arreglo que reciben es de largo $H_N + W_N + n_N$, con $X_N$ representando el valor de la dimensión $X$ al final de todas las capas convolucionales
+        - Luego, si el número de etiquetas es $L$, la cantidad de pesos con los que trabaja la capa densa en la entrada es $L \cdot (H_N + W_N + n_N)$
+        - Las demás capas no están tan densamente conectadas como esta
+    - El clasificador mismo de la última capa densa es clásico:
+        - Una sigmoide en el caso de clasificación binaria
+        - Una [función softmax](https://en.wikipedia.org/wiki/Softmax_function) en el caso de clasificación multiclase
+    - Es por lo anterior que esta capa solo trabaja con vectores unidimensionales en la entrada
+- Podemos leer más acerca del funcionamiento de las redes neuronales convolucionales en [Convolutional Neural Networks (CNNs / ConvNets)](https://cs231n.github.io/convolutional-networks/) del curso CS231n
 
 # Transfer learning
 
